@@ -122,10 +122,10 @@ private:
 
 SyncMasterServer::SyncMasterServer(
     asio::io_context &io_ctx, std::string bind_ip, unsigned short port,
-    std::shared_ptr<Core::MediaRecorder> media_recorder, double seg_seconds)
+    std::shared_ptr<Core::MediaRecorder> media_recorder)
     : io_ctx_(io_ctx), acceptor_(io_ctx), bind_ip_(std::move(bind_ip)),
       port_(port), media_recorder_(std::move(media_recorder)),
-      seg_seconds_(seg_seconds), timer_(io_ctx) {}
+      timer_(io_ctx) {}
 
 VoidResult SyncMasterServer::start() {
   boost::system::error_code errc;
@@ -197,14 +197,14 @@ void SyncMasterServer::do_accept() {
       });
 }
 
-void SyncMasterServer::send_start_at(int64_t t0_master_ns, int seg_ms) {
+void SyncMasterServer::send_start_at(int64_t t0_master_ns) {
   auto worker = worker_.lock();
   if (!worker) {
     Log::sync()->warn("No sync worker connected; start at not sent");
     return;
   }
 
-  worker->send(start_at(t0_master_ns, seg_ms));
+  worker->send(start_at(t0_master_ns));
 }
 void SyncMasterServer::send_stop_at(int64_t t_master_ns) {
   auto worker = worker_.lock();
@@ -287,11 +287,10 @@ void SyncMasterServer::on_warmup_timer() {
   static constexpr auto kStartDelayNs = 2'000'000'000LL;
 
   auto scheduled_t0_master_ns = Sync::unix_now_ns() + kStartDelayNs;
-  auto scheduled_seg_ms = static_cast<int>(seg_seconds_ * 1000.0);
 
   Log::sync()->info("Scheduling synchrnoized start at master unix ns={}",
                     scheduled_t0_master_ns);
-  send_start_at(scheduled_t0_master_ns, scheduled_seg_ms);
+  send_start_at(scheduled_t0_master_ns);
 
   timer_.expires_at(Sync::steady_deadline_from_unix_ns(scheduled_t0_master_ns));
   timer_.async_wait([this](const boost::system::error_code & /* errc */) {

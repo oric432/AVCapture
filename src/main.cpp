@@ -179,7 +179,7 @@ private:
         const auto sync_port = settings_.get<int>(Settings::Path::kSYNC_PORT);
 
         sync_server_ = std::make_unique<Sync::SyncMasterServer>(
-            io_ctx_, sync_bind_address, sync_port, recorder_, config_.video.segment_seconds_);
+            io_ctx_, sync_bind_address, sync_port, recorder_);
         if (auto res = sync_server_->start(); !res) {
             Log::crash_error("Failed initializing server");
         }

@@ -192,14 +192,12 @@ void SyncWorkerClient::handle_line(const std::string& line) {
 
     if (type_str == "start_at") {
         auto* t0_val = obj.if_contains("t0");
-        auto* seg_val = obj.if_contains("seg_ms");
 
-        if (t0_val == nullptr || !t0_val->is_int64() || seg_val == nullptr || !seg_val->is_int64()) {
+        if (t0_val == nullptr || !t0_val->is_int64()) {
             return;
         }
 
         const int64_t t0_master = t0_val->as_int64();
-        // const int seg_ms = static_cast<int>(seg_val->as_int64());
 
         const int64_t t0_local = t0_master - best_offset_ns_;
 

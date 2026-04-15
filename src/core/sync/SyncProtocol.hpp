@@ -31,8 +31,8 @@ inline json::object pong(int64_t t1_local_ns, int64_t t2r_master_ns) {
     return {{"type", "pong"}, {"t1", t1_local_ns}, {"t2r", t2r_master_ns}};
 }
 
-inline json::object start_at(int64_t t0_master_ns, int seg_ms) {
-    return {{"type", "start_at"}, {"t0", t0_master_ns}, {"seg_ms", seg_ms}};
+inline json::object start_at(int64_t t0_master_ns) {
+    return {{"type", "start_at"}, {"t0", t0_master_ns}};
 }
 
 inline json::object stop_at(int64_t t_master_ns) {
