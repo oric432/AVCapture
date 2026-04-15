@@ -17,21 +17,5 @@ inline std::chrono::steady_clock::time_point steady_deadline_from_unix_ns(int64_
     return now_steady + std::chrono::nanoseconds(delta_ns);
 }
 
-struct ClockMapper {
-    int64_t unix0_ns_{};
-    std::chrono::steady_clock::time_point steady0_;
-
-    static ClockMapper now()
-    {
-        ClockMapper mapper;
-        mapper.unix0_ns_ = unix_now_ns();
-        mapper.steady0_= std::chrono::steady_clock::now();
-        return mapper;
-    }
-
-    [[nodiscard]] std::chrono::steady_clock::time_point to_steady_deadline(int64_t unix_ns) const {
-        return steady0_ + std::chrono::nanoseconds(unix_ns - unix0_ns_);
-    }
-};
 
 } // namespace VSCapture::Sync
