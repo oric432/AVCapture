@@ -78,10 +78,10 @@ private:
     const auto type_str = type->as_string();
 
     if (type_str == "ping") {
-      const int64_t t_1 =
-          (obj.if_contains("t1") != nullptr) ? obj["t1"].as_int64() : 0;
-      const int64_t t2r = system_clock_now_ns();
-      auto pong_obj = pong(t_1, t2r);
+      const int64_t ping_sent_ns =
+          (obj.if_contains("ping_sent") != nullptr) ? obj["ping_sent"].as_int64() : 0;
+      const int64_t ping_recv_ns = system_clock_now_ns();
+      auto pong_obj = pong(ping_sent_ns, ping_recv_ns);
       send(std::move(pong_obj));
 
       return;

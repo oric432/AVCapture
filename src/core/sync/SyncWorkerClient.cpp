@@ -169,18 +169,18 @@ void SyncWorkerClient::handle_line(const std::string& line) {
     const auto type_str = type->as_string();
 
     if (type_str == "pong") {
-        auto* t1_val = obj.if_contains("t1");
-        auto* t2r_val = obj.if_contains("t2r");
-        if ((t1_val == nullptr) || !t1_val->is_int64() || (t2r_val == nullptr) || !t2r_val->is_int64()) {
+        auto* ping_sent_val = obj.if_contains("ping_sent");
+        auto* ping_recv_val = obj.if_contains("ping_recv");
+        if ((ping_sent_val == nullptr) || !ping_sent_val->is_int64() || (ping_recv_val == nullptr) || !ping_recv_val->is_int64()) {
             return;
         }
 
-        const int64_t t_1 = t1_val->as_int64();
-        const auto t2r = t2r_val->as_int64();
-        const auto t_3 = system_clock_now_ns();
+        const int64_t ping_sent_ns = ping_sent_val->as_int64();
+        const int64_t ping_recv_ns = ping_recv_val->as_int64();
+        const int64_t pong_recv_ns = system_clock_now_ns();
 
-        const int64_t rtt = t_3 - t_1;
-        const int64_t offset = t2r - (t_1 + rtt / 2);
+        const int64_t rtt = pong_recv_ns - ping_sent_ns;
+        const int64_t offset = ping_recv_ns - (ping_sent_ns + rtt / 2);
 
         if (rtt < best_rtt_ns_) {
             best_rtt_ns_ = rtt;
@@ -191,17 +191,16 @@ void SyncWorkerClient::handle_line(const std::string& line) {
     }
 
     if (type_str == "start_at") {
-        auto* t0_val = obj.if_contains("t0");
+        auto* at_val = obj.if_contains("at");
 
-        if (t0_val == nullptr || !t0_val->is_int64()) {
+        if (at_val == nullptr || !at_val->is_int64()) {
             return;
         }
 
-        const int64_t t0_master = t0_val->as_int64();
+        const int64_t at_master_ns = at_val->as_int64();
+        const int64_t at_local_ns = at_master_ns - best_offset_ns_;
 
-        const int64_t t0_local = t0_master - best_offset_ns_;
-
-        cmd_timer_.expires_at(to_steady_time_point(t0_local));
+        cmd_timer_.expires_at(to_steady_time_point(at_local_ns));
         cmd_timer_.async_wait(boost::asio::bind_executor(io_ctx_, [this](boost::system::error_code errc) {
             if (errc) {
                 return;
@@ -228,16 +227,16 @@ void SyncWorkerClient::handle_line(const std::string& line) {
 
 
     if (type_str == "stop_at") {
-        auto* t_val = obj.if_contains("t");
+        auto* at_val = obj.if_contains("at");
 
-        if (t_val == nullptr || !t_val->is_int64()) {
+        if (at_val == nullptr || !at_val->is_int64()) {
             return;
         }
 
-        const int64_t t_master = t_val->as_int64();
-        const int64_t t_local = t_master - best_offset_ns_;
+        const int64_t at_master_ns = at_val->as_int64();
+        const int64_t at_local_ns = at_master_ns - best_offset_ns_;
 
-        cmd_timer_.expires_at(to_steady_time_point(t_local));
+        cmd_timer_.expires_at(to_steady_time_point(at_local_ns));
         cmd_timer_.async_wait(boost::asio::bind_executor(io_ctx_, [this](boost::system::error_code errc) {
             if (errc) {
                 return;
@@ -256,18 +255,18 @@ void SyncWorkerClient::handle_line(const std::string& line) {
     }
 
     if (type_str == "export_at") {
-        auto* t_val = obj.if_contains("t");
+        auto* at_val = obj.if_contains("at");
         auto* output_val = obj.if_contains("output_path");
 
-        if (t_val == nullptr || !t_val->is_int64() || output_val == nullptr || !output_val->is_string())  {
+        if (at_val == nullptr || !at_val->is_int64() || output_val == nullptr || !output_val->is_string())  {
             return;
         }
 
-        const auto t_master = t_val->as_int64();
-        const auto t_local = t_master - best_offset_ns_;
+        const int64_t at_master_ns = at_val->as_int64();
+        const int64_t at_local_ns = at_master_ns - best_offset_ns_;
         const auto output_path = output_val->as_string();
 
-        cmd_timer_.expires_at(to_steady_time_point(t_local));
+        cmd_timer_.expires_at(to_steady_time_point(at_local_ns));
         cmd_timer_.async_wait(
             boost::asio::bind_executor(io_ctx_, [this, output_path](boost::system::error_code errc) {
                 if (errc) {
