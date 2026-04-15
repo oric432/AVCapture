@@ -80,11 +80,8 @@ private:
     if (type_str == "ping") {
       const int64_t t_1 =
           (obj.if_contains("t1") != nullptr) ? obj["t1"].as_int64() : 0;
-      const int seq = (obj.if_contains("seq") != nullptr)
-                          ? static_cast<int>(obj["seq"].as_int64())
-                          : 0;
       const int64_t t2r = unix_now_ns();
-      auto pong_obj = pong(t_1, t2r, seq);
+      auto pong_obj = pong(t_1, t2r);
       send(std::move(pong_obj));
 
       return;

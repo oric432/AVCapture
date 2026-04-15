@@ -96,7 +96,6 @@ void SyncWorkerClient::do_connect() {
                     connected_ = true;
                     best_offset_ns_ = 0;
                     best_rtt_ns_ = std::numeric_limits<int64_t>::max();
-                    ping_seq_ = 0;
 
                     Log::sync()->info("Connected to endpoint: {}:{}", endpoint.address().to_string(), endpoint.port());
 
@@ -321,7 +320,7 @@ void SyncWorkerClient::schedule_ping() {
             return;
         }
 
-        send(ping(unix_now_ns(), ping_seq_++));
+        send(ping(unix_now_ns()));
         schedule_ping();
     }));
 }

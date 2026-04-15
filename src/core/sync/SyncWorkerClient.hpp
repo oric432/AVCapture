@@ -48,7 +48,6 @@ private:
     int64_t best_offset_ns_ = 0;
     int64_t best_rtt_ns_ = std::numeric_limits<int64_t>::max();
 
-    int ping_seq_ = 0;
     bool running_ = false;
     bool connected_ = false;
 };

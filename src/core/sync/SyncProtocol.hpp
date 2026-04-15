@@ -23,12 +23,12 @@ inline bool parse_line(const std::string& line, json::object& out, boost::system
     return true;
 }
 
-inline json::object ping(int64_t t1_local_ns, int seq) {
-    return {{"type", "ping"}, {"t1", t1_local_ns}, {"seq", seq}};
+inline json::object ping(int64_t t1_local_ns) {
+    return {{"type", "ping"}, {"t1", t1_local_ns}};
 }
 
-inline json::object pong(int64_t t1_local_ns, int64_t t2r_master_ns, int seq) {
-    return {{"type", "pong"}, {"t1", t1_local_ns}, {"t2r", t2r_master_ns}, {"seq", seq}};
+inline json::object pong(int64_t t1_local_ns, int64_t t2r_master_ns) {
+    return {{"type", "pong"}, {"t1", t1_local_ns}, {"t2r", t2r_master_ns}};
 }
 
 inline json::object start_at(int64_t t0_master_ns, int seg_ms) {
