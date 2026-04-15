@@ -1,0 +1,5 @@
+if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    message(STATUS "Using Clang Toolchain")
+else()
+    message(WARNING "You're not using Clang")
+endif()

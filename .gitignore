@@ -1,0 +1,8 @@
+build/
+.cache/
+.vscode/
+_build/
+_install/
+third_party/FFmpeg/
+third_party/x264/
+third_party/zlib/

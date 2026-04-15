@@ -1,0 +1,34 @@
+[api]
+address = "127.0.0.1"
+port = 8084
+
+[recording]
+fps = 30
+bitrate = 4000000
+buffer_duration = 10
+segment_seconds = 2
+default_output_path = "output.mp4"
+
+[audio]
+output_device_name = ""
+input_device_name  = ""
+
+[log]
+level = "info"
+max_log_size_bytes = 5242880
+max_files = 5
+
+[nfs]
+save_locally = false
+server_address = ""
+export_path = ""
+
+[vs]
+app_path = "C:/KoUpdater"
+type = "VS"
+
+[sync]
+role = "none"
+bind_address = "0.0.0.0"
+peer_address = "127.0.0.1"
+port = 45000
