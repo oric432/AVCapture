@@ -53,15 +53,8 @@ void AudioMixer::start() {
     mixer_thread_ = std::jthread([this](std::stop_token stop_token) { mixer_loop(stop_token); });
 }
 void AudioMixer::stop() {
-    if (!mixer_thread_.joinable()) {
-        return;
-    }
-
-    mixer_thread_.request_stop();
-    mixer_thread_.join();
-    
+    mixer_thread_ = {};  // request_stop() + join() via jthread destructor
     audio_buffer_.clear();
-
     Log::audio_encode()->debug("Audio encoding thread stopped");
 }
 
