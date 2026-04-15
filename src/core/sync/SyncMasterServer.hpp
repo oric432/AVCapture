@@ -15,13 +15,13 @@ namespace VSCapture::Core {
 namespace VSCapture::Sync {
 class SyncMasterServer {
 public:
-    SyncMasterServer(asio::io_context& io_ctx, std::string bind_ip, unsigned short port);
+    SyncMasterServer(asio::io_context& io_ctx, std::string bind_ip, unsigned short port,
+                     std::shared_ptr<Core::MediaRecorder> media_recorder, double seg_seconds);
 
     Error::VoidResult start();
     void send_start_at(int64_t t0_master_ns, int seg_ms);
     void send_stop_at(int64_t t_master_ns);
     void send_export_at(int64_t t_master_ns, const std::string& output_path);
-    void enable_auto_start(std::shared_ptr<Core::MediaRecorder> media_recorder, double seg_seconds);
 
 private:
     struct Session;

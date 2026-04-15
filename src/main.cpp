@@ -178,12 +178,12 @@ private:
         const auto sync_bind_address = settings_.get<std::string>(Settings::Path::kSYNC_BIND_ADDRESS);
         const auto sync_port = settings_.get<int>(Settings::Path::kSYNC_PORT);
 
-        sync_server_ = std::make_unique<Sync::SyncMasterServer>(io_ctx_, sync_bind_address, sync_port);
+        sync_server_ = std::make_unique<Sync::SyncMasterServer>(
+            io_ctx_, sync_bind_address, sync_port, recorder_, config_.video.segment_seconds_);
         if (auto res = sync_server_->start(); !res) {
             Log::crash_error("Failed initializing server");
         }
 
-        sync_server_->enable_auto_start(recorder_, config_.video.segment_seconds_);
         Log::app()->info("Video role initialized as sync master");
 
         AppContext app_context{.server = sync_server_.get(), .recorder = nullptr};
