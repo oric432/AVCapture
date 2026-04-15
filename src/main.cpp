@@ -227,7 +227,7 @@ private:
             break;
         case RoleType::kVideo:
             if (sync_server_) {
-                const int64_t master_ns = Sync::unix_now_ns();
+                const int64_t master_ns = Sync::system_clock_now_ns();
                 sync_server_->send_stop_at(master_ns);
             }
             io_ctx_.stop();

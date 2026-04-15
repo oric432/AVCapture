@@ -39,7 +39,7 @@ http::response<http::string_body> Router::handle_stop(const http::request<http::
         }
     }
     else if (app_context_.server != nullptr) {
-        const int64_t master_ns = Sync::unix_now_ns();
+        const int64_t master_ns = Sync::system_clock_now_ns();
         app_context_.server->send_export_at(master_ns, "output.mp4");
         response_json["status"] = "scheduled stop";
     }

@@ -177,7 +177,7 @@ void SyncWorkerClient::handle_line(const std::string& line) {
 
         const int64_t t_1 = t1_val->as_int64();
         const auto t2r = t2r_val->as_int64();
-        const auto t_3 = unix_now_ns();
+        const auto t_3 = system_clock_now_ns();
 
         const int64_t rtt = t_3 - t_1;
         const int64_t offset = t2r - (t_1 + rtt / 2);
@@ -318,7 +318,7 @@ void SyncWorkerClient::schedule_ping() {
             return;
         }
 
-        send(ping(unix_now_ns()));
+        send(ping(system_clock_now_ns()));
         schedule_ping();
     }));
 }

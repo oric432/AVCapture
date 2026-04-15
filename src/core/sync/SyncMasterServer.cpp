@@ -80,7 +80,7 @@ private:
     if (type_str == "ping") {
       const int64_t t_1 =
           (obj.if_contains("t1") != nullptr) ? obj["t1"].as_int64() : 0;
-      const int64_t t2r = unix_now_ns();
+      const int64_t t2r = system_clock_now_ns();
       auto pong_obj = pong(t_1, t2r);
       send(std::move(pong_obj));
 
@@ -286,7 +286,7 @@ void SyncMasterServer::on_warmup_timer() {
 
   static constexpr auto kStartDelayNs = 2'000'000'000LL;
 
-  auto scheduled_t0_master_ns = Sync::unix_now_ns() + kStartDelayNs;
+  auto scheduled_t0_master_ns = Sync::system_clock_now_ns() + kStartDelayNs;
 
   Log::sync()->info("Scheduling synchrnoized start at master unix ns={}",
                     scheduled_t0_master_ns);
