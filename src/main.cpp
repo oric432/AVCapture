@@ -81,22 +81,22 @@ void init_logging_from_settings(const Settings& settings) {
 
 Platform::RecordingConfig make_recording_config(const Settings& settings) {
     Platform::RecordingConfig cfg;
-    cfg.fps_ = settings.get<int>(Settings::Path::kFPS);
-    cfg.bitrate_ = settings.get<int>(Settings::Path::kBITRATE);
-    cfg.buffer_duration_ = settings.get<int>(Settings::Path::kBUFFER_DURATION);
-    cfg.segment_seconds_ = settings.get<int>(Settings::Path::kSEGMENT_SECONDS);
+    cfg.video.fps_ = settings.get<int>(Settings::Path::kFPS);
+    cfg.video.bitrate_ = settings.get<int>(Settings::Path::kBITRATE);
+    cfg.video.buffer_duration_ = settings.get<int>(Settings::Path::kBUFFER_DURATION);
+    cfg.video.segment_seconds_ = settings.get<int>(Settings::Path::kSEGMENT_SECONDS);
 
-    cfg.output_device_name_ = settings.get<std::string>(Settings::Path::kOUTPUT_DEVICE_NAME);
-    cfg.input_device_name_ = settings.get<std::string>(Settings::Path::kINPUT_DEVICE_NAME);
+    cfg.audio.output_device_name_ = settings.get<std::string>(Settings::Path::kOUTPUT_DEVICE_NAME);
+    cfg.audio.input_device_name_ = settings.get<std::string>(Settings::Path::kINPUT_DEVICE_NAME);
 
-    cfg.save_locally_ = settings.get<bool>(Settings::Path::kSAVE_LOCALLY);
-    cfg.server_address_ = settings.get<std::string>(Settings::Path::kNFS_SERVER_ADDRESS);
-    cfg.export_path_ = settings.get<std::string>(Settings::Path::kNFS_EXPORT_PATH);
-    cfg.vs_app_path_ = settings.get<std::string>(Settings::Path::kVS_APP_PATH);
+    cfg.nfs.save_locally_ = settings.get<bool>(Settings::Path::kSAVE_LOCALLY);
+    cfg.nfs.server_address_ = settings.get<std::string>(Settings::Path::kNFS_SERVER_ADDRESS);
+    cfg.nfs.export_path_ = settings.get<std::string>(Settings::Path::kNFS_EXPORT_PATH);
+    cfg.vs.app_path_ = settings.get<std::string>(Settings::Path::kVS_APP_PATH);
 
     const auto vs_type_str = settings.get<std::string>(Settings::Path::kVS_TYPE);
     if (auto vs_type = Utils::parse_vs_type(vs_type_str)) {
-        cfg.vs_type_ = *vs_type;
+        cfg.vs.type_ = *vs_type;
     }
     else {
         Log::app()->warn("Unrecognized vs type, Got: {}, Expected: VS/SOFT, defaulting to VS...", vs_type_str);
@@ -183,7 +183,7 @@ private:
             Log::crash_error("Failed initializing server");
         }
 
-        sync_server_->enable_auto_start(recorder_, config_.segment_seconds_);
+        sync_server_->enable_auto_start(recorder_, config_.video.segment_seconds_);
         Log::app()->info("Video role initialized as sync master");
 
         AppContext app_context{.server = sync_server_.get(), .recorder = nullptr};

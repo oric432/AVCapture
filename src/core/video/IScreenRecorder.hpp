@@ -18,27 +18,38 @@ namespace VSCapture::Platform {
  * @brief Configuration for screen recording
  */
 struct RecordingConfig {
-    int32_t fps_ = 30;
-    int32_t bitrate_ = 4'000'000; // 4 Mbps
-    int32_t monitor_index_ = 0; // Which monitor to capture (0 = primary)
-    double buffer_duration_ = 10.0; // Circular buffer duration in seconds
-    double segment_seconds_ = 2.0;
+    struct VideoSettings {
+        int32_t fps_ = 30;
+        int32_t bitrate_ = 4'000'000; // 4 Mbps
+        int32_t monitor_index_ = 0;   // Which monitor to capture (0 = primary)
+        double buffer_duration_ = 10.0; // Circular buffer duration in seconds
+        double segment_seconds_ = 2.0;
+    };
 
+    struct AudioSettings {
+        int32_t sample_rate_ = 8000;
+        int32_t channels_ = 1;
+        int32_t bitrate_ = 48000;
+        unsigned int buffer_frame_size_ = 1024;
+        std::string output_device_name_;
+        std::string input_device_name_;
+    };
 
-    int32_t sample_rate_ = 8000;
-    int32_t channels_ = 1;
-    int32_t audio_bitrate_ = 48000;
-    unsigned int buffer_frame_size_ = 1024;
-    std::string output_device_name_;
-    std::string input_device_name_;
+    struct NfsSettings {
+        bool save_locally_ = false;
+        std::string server_address_;
+        std::string export_path_;
+    };
 
-    bool save_locally_ = false;
-    std::string server_address_;
-    std::string export_path_;
+    struct VsSettings {
+        std::string app_path_ = "C:/KoUpdater";
+        VsType type_ = VsType::kVS;
+    };
 
-    std::string vs_app_path_ = "C:/KoUpdater";
-    VsType vs_type_ = VsType::kVS;
-
+    VideoSettings video;
+    AudioSettings audio;
+    NfsSettings   nfs;
+    VsSettings    vs;
     VSCapture::RoleType role_type_ = VSCapture::RoleType::kNone;
 };
 

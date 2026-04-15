@@ -31,7 +31,7 @@ Result<std::string> ArtifactExporter::save_and_upload(
         return std::unexpected(res.error().with_context("Failed zipping bundle"));
     }
 
-    if (!config_.save_locally_) {
+    if (!config_.nfs.save_locally_) {
         if (auto res = upload(nfs, bundle.value()); !res) {
             return std::unexpected(res.error().with_context("Failed uploading to nfs"));
         }
@@ -45,7 +45,7 @@ Result<ArtifactExporter::BundlePaths> ArtifactExporter::prepare() const {
     auto segments = get_number_of_segments();
     std::filesystem::path tmp_path;
 
-    if (config_.save_locally_) {
+    if (config_.nfs.save_locally_) {
         tmp_path = std::filesystem::current_path();
     }
     else {
@@ -54,22 +54,22 @@ Result<ArtifactExporter::BundlePaths> ArtifactExporter::prepare() const {
 
     std::filesystem::path log_path{};
 
-    if (config_.vs_type_ == VsType::kVS) {
-        auto ver = VSCapture::VSLogs::read_app_version(std::format("{}/client_configuration.json", config_.vs_app_path_));
+    if (config_.vs.type_ == VsType::kVS) {
+        auto ver = VSCapture::VSLogs::read_app_version(std::format("{}/client_configuration.json", config_.vs.app_path_));
         if (!ver) {
             Log::media_recorder()->warn(
                 "Failed finding version at: {}",
-                std::format("{}/client_configuration.json", config_.vs_app_path_));
+                std::format("{}/client_configuration.json", config_.vs.app_path_));
         }
         else {
-            log_path = std::format("{}/versions/vs-{}/logs", config_.vs_app_path_, ver.value());
+            log_path = std::format("{}/versions/vs-{}/logs", config_.vs.app_path_, ver.value());
         }
-    } else if (config_.vs_type_ == VsType::kSoft) {
-        log_path = config_.vs_app_path_;
+    } else if (config_.vs.type_ == VsType::kSoft) {
+        log_path = config_.vs.app_path_;
         log_path /= "ThinVsLogs";
     }
 
-    auto bundle_dir = VSLogs::build_bundle_folder(tmp_path, log_path, config_.save_locally_, config_.vs_type_, config_.role_type_);
+    auto bundle_dir = VSLogs::build_bundle_folder(tmp_path, log_path, config_.nfs.save_locally_, config_.vs.type_, config_.role_type_);
     if (!bundle_dir) {
         return std::unexpected(bundle_dir.error().with_context("Failed creating bundle dir"));
     }
@@ -179,7 +179,7 @@ VoidResult ArtifactExporter::zip_bundle(const BundlePaths& bundle_paths) const {
     return {};
 }
 VoidResult ArtifactExporter::upload(Nfs::IFileBackend& nfs, const BundlePaths& bundle_paths) const {
-    if (auto init = nfs.initialize(config_.server_address_, config_.export_path_); !init) {
+    if (auto init = nfs.initialize(config_.nfs.server_address_, config_.nfs.export_path_); !init) {
         return std::unexpected(init.error().with_context("Failed initializing nfs client"));
     }
     if (auto upload =
@@ -192,7 +192,7 @@ VoidResult ArtifactExporter::upload(Nfs::IFileBackend& nfs, const BundlePaths& b
 
 void ArtifactExporter::cleanup(const BundlePaths& bundle_paths) const {
     std::error_code errc;
-    if (!config_.save_locally_) {
+    if (!config_.nfs.save_locally_) {
         std::filesystem::remove(bundle_paths.zip_path_, errc);
         if (errc) {
             Log::media_recorder()->warn(

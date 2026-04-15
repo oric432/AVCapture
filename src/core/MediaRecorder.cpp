@@ -29,10 +29,10 @@ VoidResult MediaRecorder::initialize(Platform::RecordingConfig& recorder_config)
 
         VideoConfig video_config;
 
-        video_config.fps_ = recorder_config.fps_;
-        video_config.bitrate_ = recorder_config.bitrate_;
-        video_config.monitor_index_ = recorder_config.monitor_index_;
-        video_config.buffer_duration_ = recorder_config.segment_seconds_;
+        video_config.fps_ = recorder_config.video.fps_;
+        video_config.bitrate_ = recorder_config.video.bitrate_;
+        video_config.monitor_index_ = recorder_config.video.monitor_index_;
+        video_config.buffer_duration_ = recorder_config.video.segment_seconds_;
 
         if (auto res = screen_recorder_->initialize(video_config); !res) {
             return std::unexpected(res.error().with_context("Failed to initialize screen recorder"));
@@ -44,13 +44,13 @@ VoidResult MediaRecorder::initialize(Platform::RecordingConfig& recorder_config)
 
         AudioConfig audio_config;
 
-        audio_config.sample_rate_ = recorder_config.sample_rate_;
-        audio_config.channels_ = recorder_config.channels_;
-        audio_config.bitrate_ = recorder_config.audio_bitrate_;
-        audio_config.buffer_duration_ = recorder_config.segment_seconds_;
-        audio_config.buffer_frame_size_ = recorder_config.buffer_frame_size_;
-        audio_config.output_device_name_ = recorder_config.output_device_name_;
-        audio_config.input_device_name_ = recorder_config.input_device_name_;
+        audio_config.sample_rate_ = recorder_config.audio.sample_rate_;
+        audio_config.channels_ = recorder_config.audio.channels_;
+        audio_config.bitrate_ = recorder_config.audio.bitrate_;
+        audio_config.buffer_duration_ = recorder_config.video.segment_seconds_;
+        audio_config.buffer_frame_size_ = recorder_config.audio.buffer_frame_size_;
+        audio_config.output_device_name_ = recorder_config.audio.output_device_name_;
+        audio_config.input_device_name_ = recorder_config.audio.input_device_name_;
 
         if (auto res = audio_capturer_->initialize(audio_config); !res) {
             return std::unexpected(res.error().with_context("Failed to initialize audio capturer"));
@@ -70,9 +70,9 @@ VoidResult MediaRecorder::initialize(Platform::RecordingConfig& recorder_config)
     }
 
     segment_config.role_type = recorder_config.role_type_;
-    segment_config.segment_seconds_ = static_cast<int>(recorder_config.segment_seconds_);
+    segment_config.segment_seconds_ = static_cast<int>(recorder_config.video.segment_seconds_);
     segment_config.ring_size_ =
-        static_cast<size_t>(recorder_config.buffer_duration_ / recorder_config.segment_seconds_);
+        static_cast<size_t>(recorder_config.video.buffer_duration_ / recorder_config.video.segment_seconds_);
 
     if (auto res = segmenter_.initialize(
             segment_config,
@@ -156,7 +156,7 @@ VoidResult MediaRecorder::save_and_upload_async() {
             Log::media_recorder()->info("Saved recording and logs to: {}", res.value());
         }
 
-        if (!recorder_config_.save_locally_ && recorder_config_.role_type_ == RoleType::kVideo) {
+        if (!recorder_config_.nfs.save_locally_ && recorder_config_.role_type_ == RoleType::kVideo) {
             std::this_thread::sleep_for(std::chrono::seconds(1));
 
             static Sync::BugAssembler assembler(*nfs_client_);
@@ -170,7 +170,7 @@ VoidResult MediaRecorder::save_and_upload_async() {
             spec.nfs_out_dir_ = "/";
             spec.bug_folder_name_ = no_prefix_foldername.erase(no_prefix_foldername.size() - 4);
 
-            if (auto init = nfs_client_->initialize(recorder_config_.server_address_, recorder_config_.export_path_); !init) {
+            if (auto init = nfs_client_->initialize(recorder_config_.nfs.server_address_, recorder_config_.nfs.export_path_); !init) {
                 Log::media_recorder()->warn("Failed initializing nfs: {}", init.error().what());
                 return;
             }
