@@ -40,7 +40,7 @@ VoidResult MediaRecorder::initialize(Platform::RecordingConfig& recorder_config)
     }
 
     if (recorder_config_.role_type_ == RoleType::kAudio || recorder_config_.role_type_ == RoleType::kNone) {
-        audio_capturer_ = std::make_unique<AudioCapturer>();
+        audio_capturer_.emplace();
 
         AudioConfig audio_config;
 
@@ -77,7 +77,7 @@ VoidResult MediaRecorder::initialize(Platform::RecordingConfig& recorder_config)
     if (auto res = segmenter_.initialize(
             segment_config,
             screen_recorder_ != nullptr ? screen_recorder_.get() : nullptr,
-            audio_capturer_ != nullptr ? audio_capturer_.get() : nullptr);
+            audio_capturer_ ? &*audio_capturer_ : nullptr);
         !res) {
         return std::unexpected(res.error().with_context("Failed to initialize rolling segmenter"));
     }
@@ -119,7 +119,7 @@ void MediaRecorder::stop() {
 }
 
 bool MediaRecorder::is_recording() {
-    return (audio_capturer_ != nullptr && audio_capturer_->is_capturing()) ||
+    return (audio_capturer_ && audio_capturer_->is_capturing()) ||
            (screen_recorder_ != nullptr && screen_recorder_->is_recording());
 }
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <thread>
 #include "audio/AudioCapturer.hpp"
@@ -40,7 +41,7 @@ private:
     std::unique_ptr<Platform::IScreenRecorder> screen_recorder_;
     std::unique_ptr<Nfs::IFileBackend> nfs_client_;
     Core::RollingSegment segmenter_;
-    std::unique_ptr<Core::AudioCapturer> audio_capturer_;
+    std::optional<Core::AudioCapturer> audio_capturer_;
 
     std::atomic<bool> save_in_progress_{false};
     std::jthread save_thread_;
