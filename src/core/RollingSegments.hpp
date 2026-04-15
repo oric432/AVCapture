@@ -40,6 +40,9 @@ private:
     Error::VoidResult tick_save_one_segment();
     std::filesystem::path seg_path(size_t idx);
 
+    Error::VoidResult create_segment_dir();
+    void remove_segment_dir() noexcept;
+
     Error::VoidResult save_av_to_ts(const std::filesystem::path& ts_path);
     Error::VoidResult save_a_to_ts(const std::filesystem::path& ts_path);
     Error::VoidResult save_v_to_ts(const std::filesystem::path& ts_path);

@@ -23,16 +23,32 @@ Error::VoidResult RollingSegment::initialize(
     return {};
 }
 
-Error::VoidResult RollingSegment::start() {
-    if (running_.exchange(true)) {
-        return {};
-    }
-
+Error::VoidResult RollingSegment::create_segment_dir() {
     std::error_code errc;
     std::filesystem::create_directories(config_.dir_, errc);
     if (errc) {
         return std::unexpected(
             Error::make_error().with_context(std::format("create directories failed with: {}", errc.message())));
+    }
+    return {};
+}
+
+void RollingSegment::remove_segment_dir() noexcept {
+    std::error_code errc;
+    std::filesystem::remove_all(config_.dir_, errc);
+    if (errc) {
+        Log::media_recorder()->warn("Failed to remove temp folder '{}': {}", config_.dir_.string(), errc.message());
+    }
+}
+
+Error::VoidResult RollingSegment::start() {
+    if (running_.exchange(true)) {
+        return {};
+    }
+
+    if (auto res = create_segment_dir(); !res) {
+        running_.store(false);
+        return res;
     }
 
     th_ = std::thread([this] {
@@ -56,12 +72,7 @@ void RollingSegment::stop() noexcept {
         th_.join();
     }
 
-    std::error_code errc;
-    std::filesystem::remove_all(config_.dir_, errc);
-    if (errc) {
-        Log::media_recorder()->warn("Failed to remove temp folder '{}': {}", config_.dir_.string(), errc.message());
-    }
-
+    remove_segment_dir();
     seq_.exchange(0, std::memory_order::acq_rel);
 }
 
