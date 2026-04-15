@@ -58,7 +58,6 @@ VoidResult MediaRecorder::initialize(Platform::RecordingConfig& recorder_config)
     }
 
 
-    segmenter_ = std::make_unique<RollingSegment>();
     Core::RollingSegment::Config segment_config;
     switch (recorder_config.role_type_) {
     case RoleType::kAudio:
@@ -75,7 +74,7 @@ VoidResult MediaRecorder::initialize(Platform::RecordingConfig& recorder_config)
     segment_config.ring_size_ =
         static_cast<size_t>(recorder_config.buffer_duration_ / recorder_config.segment_seconds_);
 
-    if (auto res = segmenter_->initialize(
+    if (auto res = segmenter_.initialize(
             segment_config,
             screen_recorder_ != nullptr ? screen_recorder_.get() : nullptr,
             audio_capturer_ != nullptr ? audio_capturer_.get() : nullptr);
@@ -88,10 +87,8 @@ VoidResult MediaRecorder::initialize(Platform::RecordingConfig& recorder_config)
     return {};
 }
 VoidResult MediaRecorder::start() {
-    if (segmenter_) {
-        if (auto res = segmenter_->start(); !res) {
-            return std::unexpected(res.error().with_context("Failed starting rolling segmenter"));
-        }
+    if (auto res = segmenter_.start(); !res) {
+        return std::unexpected(res.error().with_context("Failed starting rolling segmenter"));
     }
 
     if (screen_recorder_) {
@@ -110,7 +107,7 @@ VoidResult MediaRecorder::start() {
 }
 
 void MediaRecorder::stop() {
-    segmenter_->stop();
+    segmenter_.stop();
 
     if (audio_capturer_) {
         audio_capturer_->stop();
@@ -129,7 +126,7 @@ bool MediaRecorder::is_recording() {
 Result<std::string> MediaRecorder::save_and_upload() {
     static ArtifactExporter exporter{recorder_config_};
 
-    auto res = exporter.save_and_upload(*segmenter_, *nfs_client_);
+    auto res = exporter.save_and_upload(segmenter_, *nfs_client_);
     if (!res) {
         return std::unexpected(res.error().with_context("Failed saving and uploading"));
     }

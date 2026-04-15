@@ -39,7 +39,7 @@ public:
 private:
     std::unique_ptr<Platform::IScreenRecorder> screen_recorder_;
     std::unique_ptr<Nfs::IFileBackend> nfs_client_;
-    std::unique_ptr<Core::RollingSegment> segmenter_;
+    Core::RollingSegment segmenter_;
     std::unique_ptr<Core::AudioCapturer> audio_capturer_;
 
     std::atomic<bool> save_in_progress_{false};
