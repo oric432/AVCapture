@@ -201,7 +201,7 @@ void SyncWorkerClient::handle_line(const std::string& line) {
 
         const int64_t t0_local = t0_master - best_offset_ns_;
 
-        cmd_timer_.expires_at(steady_deadline_from_unix_ns(t0_local));
+        cmd_timer_.expires_at(to_steady_time_point(t0_local));
         cmd_timer_.async_wait(boost::asio::bind_executor(io_ctx_, [this](boost::system::error_code errc) {
             if (errc) {
                 return;
@@ -237,7 +237,7 @@ void SyncWorkerClient::handle_line(const std::string& line) {
         const int64_t t_master = t_val->as_int64();
         const int64_t t_local = t_master - best_offset_ns_;
 
-        cmd_timer_.expires_at(steady_deadline_from_unix_ns(t_local));
+        cmd_timer_.expires_at(to_steady_time_point(t_local));
         cmd_timer_.async_wait(boost::asio::bind_executor(io_ctx_, [this](boost::system::error_code errc) {
             if (errc) {
                 return;
@@ -267,7 +267,7 @@ void SyncWorkerClient::handle_line(const std::string& line) {
         const auto t_local = t_master - best_offset_ns_;
         const auto output_path = output_val->as_string();
 
-        cmd_timer_.expires_at(steady_deadline_from_unix_ns(t_local));
+        cmd_timer_.expires_at(to_steady_time_point(t_local));
         cmd_timer_.async_wait(
             boost::asio::bind_executor(io_ctx_, [this, output_path](boost::system::error_code errc) {
                 if (errc) {

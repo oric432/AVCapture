@@ -9,7 +9,7 @@ inline int64_t system_clock_now_ns() {
         .count();
 }
 
-inline std::chrono::steady_clock::time_point steady_deadline_from_unix_ns(int64_t target_unix_ns) {
+inline std::chrono::steady_clock::time_point to_steady_time_point(int64_t target_unix_ns) {
     const auto now_unix = VSCapture::Sync::system_clock_now_ns();
     const auto now_steady = std::chrono::steady_clock::now();
 

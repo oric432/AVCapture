@@ -214,7 +214,7 @@ void SyncMasterServer::send_stop_at(int64_t t_master_ns) {
   }
 
   worker->send(stop_at(t_master_ns));
-  timer_.expires_at(Sync::steady_deadline_from_unix_ns(t_master_ns));
+  timer_.expires_at(Sync::to_steady_time_point(t_master_ns));
   timer_.async_wait([this](const boost::system::error_code & /* errc */) {
     if (!media_recorder_) {
       return;
@@ -239,7 +239,7 @@ void SyncMasterServer::send_export_at(int64_t t_master_ns,
 
   worker->send(export_at(t_master_ns, "audio.ts"));
 
-  timer_.expires_at(Sync::steady_deadline_from_unix_ns(t_master_ns));
+  timer_.expires_at(Sync::to_steady_time_point(t_master_ns));
 
   timer_.async_wait(
       [this, output_path](const boost::system::error_code & /* errc */) {
@@ -292,7 +292,7 @@ void SyncMasterServer::on_warmup_timer() {
                     scheduled_t0_master_ns);
   send_start_at(scheduled_t0_master_ns);
 
-  timer_.expires_at(Sync::steady_deadline_from_unix_ns(scheduled_t0_master_ns));
+  timer_.expires_at(Sync::to_steady_time_point(scheduled_t0_master_ns));
   timer_.async_wait([this](const boost::system::error_code & /* errc */) {
     on_start_timer();
   });
