@@ -20,8 +20,7 @@ SyncWorkerClient::SyncWorkerClient(
     , socket_(io_ctx)
     , host_(std::move(host))
     , port_(port)
-    , cmd_timer_(io_ctx)
-    , reconnect_timer_(io_ctx)
+    , timer_(io_ctx)
     , ping_timer_(io_ctx)
     , media_recorder_(std::move(media_recorder)) {}
 
@@ -88,7 +87,6 @@ void SyncWorkerClient::do_connect() {
 
                     if (connect_errc) {
                         Log::sync()->warn("Sync connect failed ({}:{}): {}", host_, port_, connect_errc.message());
-                        close();
                         schedule_reconnect();
                         return;
                     }
@@ -116,7 +114,6 @@ void SyncWorkerClient::do_read() {
                 if (media_recorder_ && media_recorder_->is_recording()) {
                     media_recorder_->stop();
                 }
-                close();
                 schedule_reconnect();
                 return;
             }
@@ -138,7 +135,6 @@ void SyncWorkerClient::do_write() {
         [this, keep](boost::system::error_code errc, std::size_t /* bytes */) {
             if (errc) {
                 Log::sync()->warn("Sync write error: {}", errc.message());
-                close();
                 schedule_reconnect();
                 return;
             }
@@ -202,8 +198,8 @@ void SyncWorkerClient::handle_line(const std::string& line) {
         const int64_t at_master_ns = at_val->as_int64();
         const int64_t at_local_ns = at_master_ns - best_offset_ns_;
 
-        cmd_timer_.expires_at(to_steady_time_point(at_local_ns));
-        cmd_timer_.async_wait(boost::asio::bind_executor(io_ctx_, [this](boost::system::error_code errc) {
+        timer_.expires_at(to_steady_time_point(at_local_ns));
+        timer_.async_wait(boost::asio::bind_executor(io_ctx_, [this](boost::system::error_code errc) {
             if (errc) {
                 return;
             }
@@ -240,8 +236,8 @@ void SyncWorkerClient::handle_line(const std::string& line) {
         const int64_t at_local_ns = at_master_ns - best_offset_ns_;
         const auto output_path = output_val->as_string();
 
-        cmd_timer_.expires_at(to_steady_time_point(at_local_ns));
-        cmd_timer_.async_wait(
+        timer_.expires_at(to_steady_time_point(at_local_ns));
+        timer_.async_wait(
             boost::asio::bind_executor(io_ctx_, [this, output_path](boost::system::error_code errc) {
                 if (errc) {
                     return;
@@ -264,12 +260,14 @@ void SyncWorkerClient::handle_line(const std::string& line) {
 }
 
 void SyncWorkerClient::schedule_reconnect() {
-    if (!running_ || connected_) {
+    close();
+
+    if (!running_) {
         return;
     }
 
-    reconnect_timer_.expires_after(std::chrono::seconds(1));
-    reconnect_timer_.async_wait(boost::asio::bind_executor(io_ctx_, [this](boost::system::error_code errc) {
+    timer_.expires_after(std::chrono::seconds(1));
+    timer_.async_wait(boost::asio::bind_executor(io_ctx_, [this](boost::system::error_code errc) {
         if (errc || !running_ || connected_) {
             return;
         }
@@ -299,9 +297,8 @@ void SyncWorkerClient::schedule_ping() {
 void SyncWorkerClient::close() {
     connected_ = false;
 
-    cmd_timer_.cancel();
+    timer_.cancel();
     ping_timer_.cancel();
-    reconnect_timer_.cancel();
 
     socket_.close();
 

@@ -39,8 +39,7 @@ private:
     std::string in_;
     std::deque<std::shared_ptr<std::string>> outq_;
 
-    asio::steady_timer cmd_timer_;
-    asio::steady_timer reconnect_timer_;
+    asio::steady_timer timer_;  // reconnect when disconnected; cmd scheduling when connected
     asio::steady_timer ping_timer_;
 
     std::shared_ptr<Core::MediaRecorder> media_recorder_;
