@@ -199,29 +199,6 @@ void SyncMasterServer::send_start_at(int64_t t0_master_ns) {
 
   worker->send(start_at(t0_master_ns));
 }
-void SyncMasterServer::send_stop_at(int64_t t_master_ns) {
-  auto worker = worker_.lock();
-  if (!worker) {
-    Log::sync()->warn("No sync worker connected; stop at not sent");
-    return;
-  }
-
-  worker->send(stop_at(t_master_ns));
-  timer_.expires_at(Sync::to_steady_time_point(t_master_ns));
-  timer_.async_wait([this](const boost::system::error_code & /* errc */) {
-    if (!media_recorder_) {
-      return;
-    }
-
-    if (!media_recorder_->is_recording()) {
-      return;
-    }
-
-    media_recorder_->stop();
-
-    Log::sync()->info("Audio master stopped audio recorder successfully");
-  });
-}
 void SyncMasterServer::send_save_at(int64_t master_ns,
                                     const std::string &output_path) {
   auto worker = worker_.lock();

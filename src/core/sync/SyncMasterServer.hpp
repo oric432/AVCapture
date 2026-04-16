@@ -20,7 +20,6 @@ public:
 
     Error::VoidResult start();
     void send_start_at(int64_t t0_master_ns);
-    void send_stop_at(int64_t t_master_ns);
     void send_save_at(int64_t master_ns, const std::string& output_path);
 
 private:

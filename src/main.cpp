@@ -3,7 +3,6 @@
 #include "api/ApiServer.hpp"
 #include "core/video/IScreenRecorder.hpp"
 #include "core/sync/SyncMasterServer.hpp"
-#include "core/sync/SyncTime.hpp"
 #include "core/sync/SyncWorkerClient.hpp"
 #include "types.hpp"
 #include "utils/log.hpp"
@@ -226,10 +225,6 @@ private:
             io_ctx_.stop();
             break;
         case RoleType::kVideo:
-            if (sync_server_) {
-                const int64_t master_ns = Sync::system_clock_now_ns();
-                sync_server_->send_stop_at(master_ns);
-            }
             io_ctx_.stop();
             break;
         default:

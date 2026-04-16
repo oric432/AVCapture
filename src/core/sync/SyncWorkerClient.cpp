@@ -113,6 +113,9 @@ void SyncWorkerClient::do_read() {
         [this](boost::system::error_code errc, std::size_t bytes) {
             if (errc) {
                 Log::sync()->warn("Sync read error: {}", errc.message());
+                if (media_recorder_ && media_recorder_->is_recording()) {
+                    media_recorder_->stop();
+                }
                 close();
                 schedule_reconnect();
                 return;
@@ -224,34 +227,6 @@ void SyncWorkerClient::handle_line(const std::string& line) {
         return;
     }
 
-
-    if (type_str == "stop_at") {
-        auto* at_val = obj.if_contains("at");
-
-        if (at_val == nullptr || !at_val->is_int64()) {
-            return;
-        }
-
-        const int64_t at_master_ns = at_val->as_int64();
-        const int64_t at_local_ns = at_master_ns - best_offset_ns_;
-
-        cmd_timer_.expires_at(to_steady_time_point(at_local_ns));
-        cmd_timer_.async_wait(boost::asio::bind_executor(io_ctx_, [this](boost::system::error_code errc) {
-            if (errc) {
-                return;
-            }
-
-            if (!media_recorder_) {
-                return;
-            }
-
-            media_recorder_->stop();
-
-            Log::sync()->info("Media recorder stopped by sync command");
-        }));
-
-        return;
-    }
 
     if (type_str == "save_at") {
         auto* at_val = obj.if_contains("at");
