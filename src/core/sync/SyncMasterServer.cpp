@@ -68,13 +68,11 @@ private:
 
     const auto type_str = type->as_string();
 
-    if (type_str == "ping") {
-      const int64_t ping_sent_ns =
-          (obj.if_contains("ping_sent") != nullptr) ? obj["ping_sent"].as_int64() : 0;
+    if (type_str == kTypePing) {
+      const auto* ping_sent_ptr = get_int64(obj, "ping_sent");
+      const int64_t ping_sent_ns = ping_sent_ptr ? *ping_sent_ptr : 0;
       const int64_t ping_recv_ns = system_clock_now_ns();
-      auto pong_obj = pong(ping_sent_ns, ping_recv_ns);
-      send(std::move(pong_obj));
-
+      send(pong(ping_sent_ns, ping_recv_ns));
       return;
     }
   }

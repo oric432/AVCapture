@@ -7,6 +7,25 @@
 #include "boost/system/detail/error_code.hpp"
 
 namespace VSCapture::Sync {
+
+// Protocol message type identifiers
+constexpr std::string_view kTypePing    = "ping";
+constexpr std::string_view kTypePong    = "pong";
+constexpr std::string_view kTypeStartAt = "start_at";
+constexpr std::string_view kTypeSaveAt  = "save_at";
+
+// Returns the int64 value at key, or nullptr if missing or wrong type.
+inline const int64_t* get_int64(const json::object& obj, std::string_view key) {
+    const auto* v = obj.if_contains(key);
+    return v ? v->if_int64() : nullptr;
+}
+
+// Returns the string value at key, or nullptr if missing or wrong type.
+inline const json::string* get_string(const json::object& obj, std::string_view key) {
+    const auto* v = obj.if_contains(key);
+    return v ? v->if_string() : nullptr;
+}
+
 // Extracts one line from a read buffer: returns the line with trailing CR/LF
 // stripped, and erases the consumed bytes (including the delimiter) from buf.
 inline std::string strip_line(std::string& buf, std::size_t bytes) {

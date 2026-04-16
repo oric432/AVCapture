@@ -151,29 +151,25 @@ void SyncWorkerClient::handle_line(const std::string& line) {
         return;
     }
 
-    auto* type = obj.if_contains("type");
-    if ((type == nullptr) || !type->is_string()) {
+    const auto* type = get_string(obj, "type");
+    if (!type) {
         return;
     }
 
-    const auto type_str = type->as_string();
-
-    if (type_str == "pong") {
-        auto* ping_sent_val = obj.if_contains("ping_sent");
-        auto* ping_recv_val = obj.if_contains("ping_recv");
-        if ((ping_sent_val == nullptr) || !ping_sent_val->is_int64() || (ping_recv_val == nullptr) || !ping_recv_val->is_int64()) {
+    if (*type == kTypePong) {
+        const auto* ping_sent_ns = get_int64(obj, "ping_sent");
+        const auto* ping_recv_ns = get_int64(obj, "ping_recv");
+        if (!ping_sent_ns || !ping_recv_ns) {
             return;
         }
 
-        const int64_t ping_sent_ns = ping_sent_val->as_int64();
-        const int64_t ping_recv_ns = ping_recv_val->as_int64();
         const int64_t pong_recv_ns = system_clock_now_ns();
 
         // NTP-style offset: assume network is symmetric so ping arrived at
         // master at ping_sent_ns + rtt/2.  offset > 0 means master clock is
         // ahead of ours; subtract offset from master timestamps to get local.
-        const int64_t rtt = pong_recv_ns - ping_sent_ns;
-        const int64_t offset = ping_recv_ns - (ping_sent_ns + rtt / 2);
+        const int64_t rtt = pong_recv_ns - *ping_sent_ns;
+        const int64_t offset = *ping_recv_ns - (*ping_sent_ns + rtt / 2);
 
         // Keep only the sample with the lowest RTT — high-RTT samples have
         // more asymmetry noise and would worsen the estimate.
@@ -185,15 +181,13 @@ void SyncWorkerClient::handle_line(const std::string& line) {
         return;
     }
 
-    if (type_str == "start_at") {
-        auto* at_val = obj.if_contains("at");
-
-        if (at_val == nullptr || !at_val->is_int64()) {
+    if (*type == kTypeStartAt) {
+        const auto* at_master_ns = get_int64(obj, "at");
+        if (!at_master_ns) {
             return;
         }
 
-        const int64_t at_master_ns = at_val->as_int64();
-        const int64_t at_local_ns = at_master_ns - best_offset_ns_;
+        const int64_t at_local_ns = *at_master_ns - best_offset_ns_;
 
         timer_.expires_at(to_steady_time_point(at_local_ns));
         timer_.async_wait(boost::asio::bind_executor(io_ctx_, [this](boost::system::error_code errc) {
@@ -221,21 +215,18 @@ void SyncWorkerClient::handle_line(const std::string& line) {
     }
 
 
-    if (type_str == "save_at") {
-        auto* at_val = obj.if_contains("at");
-        auto* output_val = obj.if_contains("output_path");
-
-        if (at_val == nullptr || !at_val->is_int64() || output_val == nullptr || !output_val->is_string())  {
+    if (*type == kTypeSaveAt) {
+        const auto* at_master_ns = get_int64(obj, "at");
+        const auto* output_path = get_string(obj, "output_path");
+        if (!at_master_ns || !output_path) {
             return;
         }
 
-        const int64_t at_master_ns = at_val->as_int64();
-        const int64_t at_local_ns = at_master_ns - best_offset_ns_;
-        const auto output_path = output_val->as_string();
+        const int64_t at_local_ns = *at_master_ns - best_offset_ns_;
 
         timer_.expires_at(to_steady_time_point(at_local_ns));
         timer_.async_wait(
-            boost::asio::bind_executor(io_ctx_, [this, output_path](boost::system::error_code errc) {
+            boost::asio::bind_executor(io_ctx_, [this](boost::system::error_code errc) {
                 if (errc) {
                     return;
                 }
