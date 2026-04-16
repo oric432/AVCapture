@@ -37,7 +37,7 @@ private:
     unsigned short port_;
 
     std::string in_;
-    std::deque<std::shared_ptr<std::string>> outq_;
+    std::deque<std::unique_ptr<std::string>> outq_;
 
     asio::steady_timer timer_;  // reconnect when disconnected; cmd scheduling when connected
     asio::steady_timer ping_timer_;
@@ -49,6 +49,7 @@ private:
 
     bool running_ = false;
     bool connected_ = false;
+    bool writing_ = false;
 };
 
 } // namespace VSCapture::Sync

@@ -12,7 +12,8 @@ struct SyncMasterServer::Session : std::enable_shared_from_this<Session> {
   asio::strand<asio::any_io_executor> strand_;
   std::string in_;
 
-  std::deque<std::shared_ptr<std::string>> outq_;
+  std::deque<std::unique_ptr<std::string>> outq_;
+  bool writing_ = false;
 
   explicit Session(tcp::socket sock)
       : socket_(std::move(sock)), strand_(sock.get_executor()) {}
@@ -26,13 +27,10 @@ struct SyncMasterServer::Session : std::enable_shared_from_this<Session> {
   }
 
   void send(json::object msg) {
-    auto buf = std::make_shared<std::string>(to_line(std::move(msg)));
-    asio::post(strand_, [self = shared_from_this(), buf] {
-      const bool idle = self->outq_.empty();
-      self->outq_.push_back(buf);
-      if (idle) {
-        self->do_write();
-      }
+    auto buf = std::make_unique<std::string>(to_line(std::move(msg)));
+    asio::post(strand_, [self = shared_from_this(), buf = std::move(buf)]() mutable {
+      self->outq_.push_back(std::move(buf));
+      self->do_write();
     });
   }
 
@@ -82,29 +80,31 @@ private:
   }
 
   void do_write() {
-    if (outq_.empty()) {
+    if (outq_.empty() || writing_) {
       return;
     }
 
-    auto keep = outq_.front();
+    writing_ = true;
+    auto msg = std::move(outq_.front());
+    outq_.pop_front();
+
     asio::async_write(
-        socket_, asio::buffer(*keep),
+        socket_, asio::buffer(*msg),
         asio::bind_executor(strand_, [self = shared_from_this(),
-                                      keep](boost::system::error_code errc,
+                                      msg = std::move(msg)](boost::system::error_code errc,
                                             std::size_t /* bytes */) {
+          self->writing_ = false;
           if (errc) {
             self->cleanup();
             return;
           }
 
-          self->outq_.pop_front();
-          if (!self->outq_.empty()) {
-            self->do_write();
-          }
+          self->do_write();
         }));
   }
 
   void cleanup() {
+    writing_ = false;
     socket_.shutdown(tcp::socket::shutdown_both);
     socket_.close();
 

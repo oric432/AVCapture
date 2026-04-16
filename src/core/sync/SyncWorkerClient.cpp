@@ -39,18 +39,14 @@ void SyncWorkerClient::stop() {
 }
 
 void SyncWorkerClient::send(json::object msg) {
-    auto buf = std::make_shared<std::string>(to_line(std::move(msg)));
-    asio::post(io_ctx_, [this, buf] {
+    auto buf = std::make_unique<std::string>(to_line(std::move(msg)));
+    asio::post(io_ctx_, [this, buf = std::move(buf)]() mutable {
         if (!connected_) {
             return;
         }
 
-        const bool idle = outq_.empty();
-        outq_.push_back(buf);
-
-        if (idle) {
-            do_write();
-        }
+        outq_.push_back(std::move(buf));
+        do_write();
     });
 }
 
@@ -124,25 +120,26 @@ void SyncWorkerClient::do_read() {
 }
 
 void SyncWorkerClient::do_write() {
-    if (outq_.empty()) {
+    if (outq_.empty() || writing_) {
         return;
     }
 
-    auto keep = outq_.front();
+    writing_ = true;
+    auto msg = std::move(outq_.front());
+    outq_.pop_front();
+
     asio::async_write(
         socket_,
-        asio::buffer(*keep),
-        [this, keep](boost::system::error_code errc, std::size_t /* bytes */) {
+        asio::buffer(*msg),
+        [this, msg = std::move(msg)](boost::system::error_code errc, std::size_t /* bytes */) {
+            writing_ = false;
             if (errc) {
                 Log::sync()->warn("Sync write error: {}", errc.message());
                 schedule_reconnect();
                 return;
             }
 
-            outq_.pop_front();
-            if (!outq_.empty()) {
-                do_write();
-            }
+            do_write();
         });
 }
 
@@ -296,6 +293,7 @@ void SyncWorkerClient::schedule_ping() {
 
 void SyncWorkerClient::close() {
     connected_ = false;
+    writing_ = false;
 
     timer_.cancel();
     ping_timer_.cancel();
