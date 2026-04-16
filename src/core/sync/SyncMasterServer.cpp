@@ -50,14 +50,7 @@ private:
                 return;
               }
 
-              std::string line = self->in_.substr(0, bytes);
-              self->in_.erase(0, bytes);
-              while (!line.empty() &&
-                     (line.back() == '\n' || line.back() == '\r')) {
-                line.pop_back();
-              }
-
-              self->handle_line(line);
+              self->handle_line(strip_line(self->in_, bytes));
               self->do_read();
             }));
   }

@@ -7,6 +7,17 @@
 #include "boost/system/detail/error_code.hpp"
 
 namespace VSCapture::Sync {
+// Extracts one line from a read buffer: returns the line with trailing CR/LF
+// stripped, and erases the consumed bytes (including the delimiter) from buf.
+inline std::string strip_line(std::string& buf, std::size_t bytes) {
+    std::string line = buf.substr(0, bytes);
+    buf.erase(0, bytes);
+    while (!line.empty() && (line.back() == '\n' || line.back() == '\r')) {
+        line.pop_back();
+    }
+    return line;
+}
+
 inline std::string to_line(json::object obj) {
     std::string str = json::serialize(obj);
     str.push_back('\n');

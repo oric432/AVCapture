@@ -118,13 +118,7 @@ void SyncWorkerClient::do_read() {
                 return;
             }
 
-            std::string line = in_.substr(0, bytes);
-            in_.erase(0, bytes);
-            while (!line.empty() && (line.back() == '\n' || line.back() == '\r')) {
-                line.pop_back();
-            }
-
-            handle_line(line);
+            handle_line(strip_line(in_, bytes));
             do_read();
         });
 }
