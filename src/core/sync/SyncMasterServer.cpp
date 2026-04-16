@@ -229,17 +229,17 @@ void SyncMasterServer::send_stop_at(int64_t t_master_ns) {
     Log::sync()->info("Audio master stopped audio recorder successfully");
   });
 }
-void SyncMasterServer::send_export_at(int64_t t_master_ns,
-                                      const std::string &output_path) {
+void SyncMasterServer::send_save_at(int64_t master_ns,
+                                    const std::string &output_path) {
   auto worker = worker_.lock();
   if (!worker) {
-    Log::sync()->warn("No sync worker connected; export at not sent");
+    Log::sync()->warn("No sync worker connected; save_at not sent");
     return;
   }
 
-  worker->send(export_at(t_master_ns, "audio.ts"));
+  worker->send(save_at(master_ns, "audio.ts"));
 
-  timer_.expires_at(Sync::to_steady_time_point(t_master_ns));
+  timer_.expires_at(Sync::to_steady_time_point(master_ns));
 
   timer_.async_wait(
       [this, output_path](const boost::system::error_code & /* errc */) {

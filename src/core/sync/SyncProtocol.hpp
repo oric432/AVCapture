@@ -39,8 +39,11 @@ inline json::object stop_at(int64_t master_ns) {
     return {{"type", "stop_at"}, {"at", master_ns}};
 }
 
-inline json::object export_at(int64_t master_ns, std::string output_path) {
-    return {{"type", "export_at"}, {"at", master_ns}, {"output_path", output_path}};
+// Instructs the worker to flush its rolling buffer to the NFS backend at the
+// scheduled master clock time. output_path is advisory and may be ignored by
+// the worker if it manages its own naming.
+inline json::object save_at(int64_t master_ns, std::string output_path) {
+    return {{"type", "save_at"}, {"at", master_ns}, {"output_path", output_path}};
 }
 
 } // namespace VSCapture::Sync

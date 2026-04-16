@@ -254,7 +254,7 @@ void SyncWorkerClient::handle_line(const std::string& line) {
         return;
     }
 
-    if (type_str == "export_at") {
+    if (type_str == "save_at") {
         auto* at_val = obj.if_contains("at");
         auto* output_val = obj.if_contains("output_path");
 
