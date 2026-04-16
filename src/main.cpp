@@ -185,11 +185,11 @@ private:
 
         Log::app()->info("Video role initialized as sync master");
 
-        AppContext app_context{.server = sync_server_.get(), .recorder = nullptr};
+        AppContext app_context{sync_server_.get()};
         api_server_ = start_api_server_from_settings(io_ctx_, settings_, app_context);
     }
     void wire_standalone() {
-        AppContext app_context{.server = nullptr, .recorder = recorder_.get()};
+        AppContext app_context{recorder_.get()};
         api_server_ = start_api_server_from_settings(io_ctx_, settings_, app_context);
 
         if (auto res = recorder_->start(); !res) {

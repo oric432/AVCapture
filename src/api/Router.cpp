@@ -24,32 +24,38 @@ http::response<http::string_body> Router::handle(const http::request<http::strin
 }
 
 http::response<http::string_body> Router::handle_stop(const http::request<http::string_body>& req) {
-    json::object response_json;
-    if (app_context_.recorder != nullptr) {
-        if (!app_context_.recorder->is_recording()) {
+    if (auto* rec = std::get_if<Core::MediaRecorder*>(&app_context_)) {
+        if (!(*rec)->is_recording()) {
             return error_response("Not recording", http::status::bad_request, req.version());
         }
-        if (auto res = app_context_.recorder->save_and_upload_async(); !res) {
+        json::object response_json;
+        if (auto res = (*rec)->save_and_upload_async(); !res) {
             Log::api()->error("Failed saving buffer to file: {}", res.error().what());
             response_json["status"] = "failed";
             response_json["error"] = std::format("Failed saving buffer to file: {}", res.error().what());
-        }
-        else {
+        } else {
             response_json["status"] = "stopped";
         }
-    }
-    else if (app_context_.server != nullptr) {
-        const int64_t master_ns = Sync::system_clock_now_ns();
-        app_context_.server->send_save_at(master_ns, "output.mp4");
-        response_json["status"] = "scheduled stop";
+        return json_response(response_json, req.version());
     }
 
-    return json_response(response_json, req.version());
+    if (auto* srv = std::get_if<Sync::SyncMasterServer*>(&app_context_)) {
+        const int64_t master_ns = Sync::system_clock_now_ns();
+        (*srv)->send_save_at(master_ns, "output.mp4");
+        json::object response_json;
+        response_json["status"] = "scheduled stop";
+        return json_response(response_json, req.version());
+    }
+
+    return error_response("No context", http::status::internal_server_error, req.version());
 }
 http::response<http::string_body> Router::handle_status(const http::request<http::string_body>& req) const {
     json::object response_json;
-    response_json["recording"] = app_context_.recorder->is_recording();
-
+    if (auto* rec = std::get_if<Core::MediaRecorder*>(&app_context_)) {
+        response_json["recording"] = (*rec)->is_recording();
+    } else {
+        response_json["recording"] = false;
+    }
     return json_response(response_json, req.version());
 }
 http::response<http::string_body> Router::handle_health(const http::request<http::string_body>& req) {
