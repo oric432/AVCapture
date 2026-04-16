@@ -19,7 +19,7 @@ struct SyncMasterServer::Session : std::enable_shared_from_this<Session> {
       : socket_(std::move(sock)), strand_(sock.get_executor()) {}
 
   void start() {
-    asio::dispatch(strand_, [self = shared_from_this()] { self->do_read(); });
+    asio::post(strand_, [self = shared_from_this()] { self->do_read(); });
   }
 
   void close() {
