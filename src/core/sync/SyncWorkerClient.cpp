@@ -179,9 +179,14 @@ void SyncWorkerClient::handle_line(const std::string& line) {
         const int64_t ping_recv_ns = ping_recv_val->as_int64();
         const int64_t pong_recv_ns = system_clock_now_ns();
 
+        // NTP-style offset: assume network is symmetric so ping arrived at
+        // master at ping_sent_ns + rtt/2.  offset > 0 means master clock is
+        // ahead of ours; subtract offset from master timestamps to get local.
         const int64_t rtt = pong_recv_ns - ping_sent_ns;
         const int64_t offset = ping_recv_ns - (ping_sent_ns + rtt / 2);
 
+        // Keep only the sample with the lowest RTT — high-RTT samples have
+        // more asymmetry noise and would worsen the estimate.
         if (rtt < best_rtt_ns_) {
             best_rtt_ns_ = rtt;
             best_offset_ns_ = offset;
@@ -305,7 +310,7 @@ void SyncWorkerClient::schedule_reconnect() {
 }
 
 void SyncWorkerClient::schedule_ping() {
-    if (!running_ || connected_) {
+    if (!running_ || !connected_) {
         return;
     }
 
@@ -313,7 +318,7 @@ void SyncWorkerClient::schedule_ping() {
 
     ping_timer_.expires_after(std::chrono::milliseconds(kPingIntervalMs));
     ping_timer_.async_wait(boost::asio::bind_executor(io_ctx_, [this](boost::system::error_code errc) {
-        if (errc || !running_ || connected_) {
+        if (errc || !running_ || !connected_) {
             return;
         }
 
