@@ -66,9 +66,10 @@ inline json::object start_at(int64_t master_ns) {
 }
 
 // Instructs the worker to flush its rolling buffer to the NFS backend at the
-// scheduled master clock time.
-inline json::object save_at(int64_t master_ns) {
-    return {{"type", "save_at"}, {"at", master_ns}};
+// scheduled master clock time. id is a shared UUID used by both master and
+// worker to produce matching filenames (video_bug_<id>.zip / audio_bug_<id>.zip).
+inline json::object save_at(int64_t master_ns, std::string_view id) {
+    return {{"type", "save_at"}, {"at", master_ns}, {"id", id}};
 }
 
 } // namespace VSCapture::Sync

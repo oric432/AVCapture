@@ -20,9 +20,14 @@ public:
                    unsigned short port,
                    std::shared_ptr<Core::MediaRecorder> media_recorder);
 
+  struct SplitRecordingNames {
+    std::string video_name;
+    std::string audio_name;
+  };
+
   Error::VoidResult start();
   void send_start_at(int64_t t0_master_ns);
-  void send_save_at(int64_t master_ns);
+  SplitRecordingNames send_save_at(int64_t master_ns);
 
 private:
   struct Session;

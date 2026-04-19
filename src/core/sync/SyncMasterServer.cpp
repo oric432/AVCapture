@@ -205,28 +205,23 @@ void SyncMasterServer::send_start_at(int64_t t0_master_ns) {
 
   worker->send(start_at(t0_master_ns));
 }
-void SyncMasterServer::send_save_at(int64_t master_ns) {
-  auto worker = worker_.lock();
-  if (!worker) {
-    Log::sync()->warn("No sync worker connected; save_at not sent");
-    return;
+SyncMasterServer::SplitRecordingNames SyncMasterServer::send_save_at(int64_t master_ns) {
+  const std::string uuid = boost::uuids::to_string(boost::uuids::random_generator{}());
+
+  if (auto worker = worker_.lock()) {
+    worker->send(save_at(master_ns, uuid));
+  } else {
+    Log::sync()->warn("No sync worker connected; save_at not sent to worker");
   }
 
-  worker->send(save_at(master_ns));
-
   timer_.expires_at(Sync::to_steady_time_point(master_ns));
-
   timer_.async_wait(
-      [this](const boost::system::error_code & /* errc */) {
-        if (!media_recorder_) {
+      [this, uuid](const boost::system::error_code & /* errc */) {
+        if (!media_recorder_ || !media_recorder_->is_recording()) {
           return;
         }
 
-        if (!media_recorder_->is_recording()) {
-          return;
-        }
-
-        if (auto res = media_recorder_->save_and_upload_async(); !res) {
+        if (auto res = media_recorder_->save_and_upload_async(uuid); !res) {
           Log::sync()->error(
               "Failed saving and uploading in audio master recorder: {}",
               res.error().what());
@@ -235,6 +230,12 @@ void SyncMasterServer::send_save_at(int64_t master_ns) {
 
         Log::sync()->info("Audio master saved and uploaded successfully");
       });
+
+  const bool locally = media_recorder_ && media_recorder_->save_locally();
+  return {
+      std::format("{}bug_{}.zip", locally ? "" : "video_", uuid),
+      std::format("{}bug_{}.zip", locally ? "" : "audio_", uuid),
+  };
 }
 
 void SyncMasterServer::on_worker_connected() {
