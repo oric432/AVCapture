@@ -22,7 +22,7 @@ struct RecordingConfig {
         int32_t fps_ = 30;
         int32_t bitrate_ = 4'000'000; // 4 Mbps
         int32_t monitor_index_ = 0;   // Which monitor to capture (0 = primary)
-        double buffer_duration_ = 10.0; // Circular buffer duration in seconds
+        double recording_length_seconds_ = 10.0; // Total circular buffer length in seconds
         double segment_seconds_ = 2.0;
     };
 

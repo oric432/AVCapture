@@ -20,7 +20,7 @@ struct VideoConfig {
     int fps_;
     int bitrate_;
     int32_t monitor_index_ = 0;
-    double buffer_duration_ = 10.0;
+    double recording_length_seconds_ = 10.0;
     RotationType rotation_ = RotationType::kUnspecified; // 0=normal, 1=90deg, 2=180deg, 3=270deg
 };
 } // namespace VSCapture::Core

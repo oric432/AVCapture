@@ -32,7 +32,7 @@ VoidResult ScreenRecorderBase::initialize(const Core::VideoConfig& config) {
     encoder_config.fps_ = config_.fps_;
     encoder_config.bitrate_ = config_.bitrate_;
     encoder_config.rotation_ = rotation_;
-    encoder_config.buffer_duration_ = config.buffer_duration_;
+    encoder_config.recording_length_seconds_ = config.recording_length_seconds_;
     encoder_config.monitor_index_ = config.monitor_index_;
 
     if (auto res = encoder_queue_.initialize(encoder_config); !res) {

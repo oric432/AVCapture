@@ -27,14 +27,14 @@ VoidResult VideoEncoderQueue::initialize(const Core::VideoConfig& config) {
     video_encoder_.emplace(std::move(res.value()));
 
     // Calculate buffer capacity
-    const auto max_frames = static_cast<size_t>(config_.buffer_duration_ * config_.fps_);
+    const auto max_frames = static_cast<size_t>(config_.recording_length_seconds_ * config_.fps_);
 
     encoded_buffer_.set_capacity(max_frames);
 
     Log::video_encode()->debug(
         "Video encoder queue configured: {:.1f}s duration, {} frames "
         "({}fps, {}x{})",
-        config_.buffer_duration_,
+        config_.recording_length_seconds_,
         max_frames,
         config_.fps_,
         config_.width_,

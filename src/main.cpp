@@ -82,7 +82,7 @@ Platform::RecordingConfig make_recording_config(const Settings& settings) {
     Platform::RecordingConfig cfg;
     cfg.video.fps_ = settings.get<int>(Settings::Path::kFPS);
     cfg.video.bitrate_ = settings.get<int>(Settings::Path::kBITRATE);
-    cfg.video.buffer_duration_ = settings.get<int>(Settings::Path::kBUFFER_DURATION);
+    cfg.video.recording_length_seconds_ = settings.get<int>(Settings::Path::kBUFFER_DURATION);
     cfg.video.segment_seconds_ = settings.get<int>(Settings::Path::kSEGMENT_SECONDS);
 
     cfg.audio.output_device_name_ = settings.get<std::string>(Settings::Path::kOUTPUT_DEVICE_NAME);

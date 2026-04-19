@@ -32,7 +32,7 @@ VoidResult MediaRecorder::initialize(Platform::RecordingConfig& recorder_config)
         video_config.fps_ = recorder_config.video.fps_;
         video_config.bitrate_ = recorder_config.video.bitrate_;
         video_config.monitor_index_ = recorder_config.video.monitor_index_;
-        video_config.buffer_duration_ = recorder_config.video.segment_seconds_;
+        video_config.recording_length_seconds_ = recorder_config.video.segment_seconds_;
 
         if (auto res = screen_recorder_->initialize(video_config); !res) {
             return std::unexpected(res.error().with_context("Failed to initialize screen recorder"));
@@ -47,7 +47,7 @@ VoidResult MediaRecorder::initialize(Platform::RecordingConfig& recorder_config)
         audio_config.sample_rate_ = recorder_config.audio.sample_rate_;
         audio_config.channels_ = recorder_config.audio.channels_;
         audio_config.bitrate_ = recorder_config.audio.bitrate_;
-        audio_config.buffer_duration_ = recorder_config.video.segment_seconds_;
+        audio_config.recording_length_seconds_ = recorder_config.video.segment_seconds_;
         audio_config.buffer_frame_size_ = recorder_config.audio.buffer_frame_size_;
         audio_config.output_device_name_ = recorder_config.audio.output_device_name_;
         audio_config.input_device_name_ = recorder_config.audio.input_device_name_;
@@ -72,7 +72,7 @@ VoidResult MediaRecorder::initialize(Platform::RecordingConfig& recorder_config)
     segment_config.role_type = recorder_config.role_type_;
     segment_config.segment_seconds_ = static_cast<int>(recorder_config.video.segment_seconds_);
     segment_config.ring_size_ =
-        static_cast<size_t>(recorder_config.video.buffer_duration_ / recorder_config.video.segment_seconds_);
+        static_cast<size_t>(recorder_config.video.recording_length_seconds_ / recorder_config.video.segment_seconds_);
 
     if (auto res = segmenter_.initialize(
             segment_config,

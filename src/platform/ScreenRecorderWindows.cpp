@@ -242,7 +242,7 @@ VoidResult ScreenRecorderWindows::init_encoder() {
     encoder_cfg.fps_ = config_.fps_;
     encoder_cfg.bitrate_ = config_.bitrate_;
     encoder_cfg.rotation_ = rotation_;
-    encoder_cfg.buffer_duration_ = config_.buffer_duration_;
+    encoder_cfg.recording_length_seconds_ = config_.recording_length_seconds_;
 
     if (auto res = encoder_queue_.initialize(encoder_cfg); !res) {
         return std::unexpected(

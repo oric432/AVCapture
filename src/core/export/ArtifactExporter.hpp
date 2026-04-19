@@ -33,7 +33,7 @@ private:
     void cleanup(const BundlePaths& bundle_paths) const;
 
     size_t get_number_of_segments() const {
-        return static_cast<size_t>(config_.video.buffer_duration_ / config_.video.segment_seconds_);
+        return static_cast<size_t>(config_.video.recording_length_seconds_ / config_.video.segment_seconds_);
     }
 
     Platform::RecordingConfig config_;

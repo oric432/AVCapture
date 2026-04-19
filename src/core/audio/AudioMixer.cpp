@@ -24,7 +24,7 @@ VoidResult AudioMixer::initialize(const Core::AudioConfig& config) {
     audio_encoder_.emplace(std::move(res.value()));
 
     const auto total_sample_target =
-        static_cast<int64_t>(std::llround(config_.buffer_duration_ * config_.sample_rate_));
+        static_cast<int64_t>(std::llround(config_.recording_length_seconds_ * config_.sample_rate_));
 
     const auto max_frames =
         static_cast<size_t>((total_sample_target + config_.buffer_frame_size_ - 1) / config_.buffer_frame_size_);
