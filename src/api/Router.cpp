@@ -41,7 +41,7 @@ http::response<http::string_body> Router::handle_stop(const http::request<http::
 
     if (auto* srv = std::get_if<Sync::SyncMasterServer*>(&app_context_)) {
         const int64_t master_ns = Sync::system_clock_now_ns();
-        (*srv)->send_save_at(master_ns, "output.mp4");
+        (*srv)->send_save_at(master_ns);
         json::object response_json;
         response_json["status"] = "scheduled stop";
         return json_response(response_json, req.version());

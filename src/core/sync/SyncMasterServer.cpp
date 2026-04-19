@@ -201,20 +201,19 @@ void SyncMasterServer::send_start_at(int64_t t0_master_ns) {
 
   worker->send(start_at(t0_master_ns));
 }
-void SyncMasterServer::send_save_at(int64_t master_ns,
-                                    const std::string &output_path) {
+void SyncMasterServer::send_save_at(int64_t master_ns) {
   auto worker = worker_.lock();
   if (!worker) {
     Log::sync()->warn("No sync worker connected; save_at not sent");
     return;
   }
 
-  worker->send(save_at(master_ns, "audio.ts"));
+  worker->send(save_at(master_ns));
 
   timer_.expires_at(Sync::to_steady_time_point(master_ns));
 
   timer_.async_wait(
-      [this, output_path](const boost::system::error_code & /* errc */) {
+      [this](const boost::system::error_code & /* errc */) {
         if (!media_recorder_) {
           return;
         }

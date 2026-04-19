@@ -11,286 +11,285 @@ using namespace VSCapture::Error;
 using namespace VSCapture;
 
 SyncWorkerClient::SyncWorkerClient(
-    asio::io_context& io_ctx,
-    std::string host,
-    unsigned short port,
+    asio::io_context &io_ctx, std::string host, unsigned short port,
     std::shared_ptr<Core::MediaRecorder> media_recorder)
-    : io_ctx_(io_ctx)
-    , resolver_(io_ctx)
-    , socket_(io_ctx)
-    , host_(std::move(host))
-    , port_(port)
-    , timer_(io_ctx)
-    , ping_timer_(io_ctx)
-    , media_recorder_(std::move(media_recorder)) {}
+    : io_ctx_(io_ctx), resolver_(io_ctx), socket_(io_ctx),
+      host_(std::move(host)), port_(port), timer_(io_ctx), ping_timer_(io_ctx),
+      media_recorder_(std::move(media_recorder)) {}
 
 void SyncWorkerClient::start() {
-    asio::post(io_ctx_, [this] {
-        running_ = true;
-        do_connect();
-    });
+  asio::post(io_ctx_, [this] {
+    running_ = true;
+    do_connect();
+  });
 }
 
 void SyncWorkerClient::stop() {
-    asio::post(io_ctx_, [this] {
-        running_ = false;
-        close();
-    });
+  asio::post(io_ctx_, [this] {
+    running_ = false;
+    close();
+  });
 }
 
 void SyncWorkerClient::send(json::object msg) {
-    auto buf = std::make_unique<std::string>(to_line(std::move(msg)));
-    asio::post(io_ctx_, [this, buf = std::move(buf)]() mutable {
-        if (!connected_) {
-            return;
-        }
+  auto buf = std::make_unique<std::string>(to_line(std::move(msg)));
+  asio::post(io_ctx_, [this, buf = std::move(buf)]() mutable {
+    if (!connected_) {
+      return;
+    }
 
-        outq_.push_back(std::move(buf));
-        do_write();
-    });
+    outq_.push_back(std::move(buf));
+    do_write();
+  });
 }
 
 void SyncWorkerClient::do_connect() {
-    if (!running_ || connected_) {
-        return;
-    }
+  if (!running_ || connected_) {
+    return;
+  }
 
-    boost::system::error_code errc;
-    errc = socket_.close(errc);
-    resolver_.cancel();
+  boost::system::error_code errc;
+  errc = socket_.close(errc);
+  resolver_.cancel();
 
-    resolver_.async_resolve(
-        host_,
-        std::to_string(port_),
-        [this](boost::system::error_code errc, const tcp::resolver::results_type& endpoints) {
-            if (!running_) {
+  resolver_.async_resolve(
+      host_, std::to_string(port_),
+      [this](boost::system::error_code errc,
+             const tcp::resolver::results_type &endpoints) {
+        if (!running_) {
+          return;
+        }
+
+        if (errc) {
+          Log::sync()->warn("Sync resolve failed ({}:{}): {}", host_, port_,
+                            errc.message());
+          schedule_reconnect();
+          return;
+        }
+
+        asio::async_connect(
+            socket_, endpoints,
+            [this](boost::system::error_code connect_errc,
+                   const tcp::endpoint &endpoint) {
+              if (!running_) {
                 return;
-            }
+              }
 
-            if (errc) {
-                Log::sync()->warn("Sync resolve failed ({}:{}): {}", host_, port_, errc.message());
+              if (connect_errc) {
+                Log::sync()->warn("Sync connect failed ({}:{}): {}", host_,
+                                  port_, connect_errc.message());
                 schedule_reconnect();
                 return;
-            }
+              }
 
-            asio::async_connect(
-                socket_,
-                endpoints,
-                [this](boost::system::error_code connect_errc, const tcp::endpoint& endpoint) {
-                    if (!running_) {
-                        return;
-                    }
+              connected_ = true;
+              best_offset_ns_ = 0;
+              best_rtt_ns_ = std::numeric_limits<int64_t>::max();
 
-                    if (connect_errc) {
-                        Log::sync()->warn("Sync connect failed ({}:{}): {}", host_, port_, connect_errc.message());
-                        schedule_reconnect();
-                        return;
-                    }
+              Log::sync()->info("Connected to endpoint: {}:{}",
+                                endpoint.address().to_string(),
+                                endpoint.port());
 
-                    connected_ = true;
-                    best_offset_ns_ = 0;
-                    best_rtt_ns_ = std::numeric_limits<int64_t>::max();
-
-                    Log::sync()->info("Connected to endpoint: {}:{}", endpoint.address().to_string(), endpoint.port());
-
-                    schedule_ping();
-                    do_read();
-                });
-        });
+              schedule_ping();
+              do_read();
+            });
+      });
 }
 
 void SyncWorkerClient::do_read() {
-    asio::async_read_until(
-        socket_,
-        asio::dynamic_buffer(in_),
-        '\n',
-        [this](boost::system::error_code errc, std::size_t bytes) {
-            if (errc) {
-                Log::sync()->warn("Sync read error: {}", errc.message());
-                if (media_recorder_ && media_recorder_->is_recording()) {
-                    media_recorder_->stop();
-                }
-                schedule_reconnect();
-                return;
-            }
+  asio::async_read_until(
+      socket_, asio::dynamic_buffer(in_), '\n',
+      [this](boost::system::error_code errc, std::size_t bytes) {
+        if (errc) {
+          Log::sync()->warn("Sync read error: {}", errc.message());
+          if (media_recorder_ && media_recorder_->is_recording()) {
+            media_recorder_->stop();
+          }
+          schedule_reconnect();
+          return;
+        }
 
-            handle_line(strip_line(in_, bytes));
-            do_read();
-        });
+        handle_line(strip_line(in_, bytes));
+        do_read();
+      });
 }
 
 void SyncWorkerClient::do_write() {
-    if (outq_.empty() || writing_) {
-        return;
-    }
+  if (outq_.empty() || writing_) {
+    return;
+  }
 
-    writing_ = true;
-    auto msg = std::move(outq_.front());
-    outq_.pop_front();
+  writing_ = true;
+  auto msg = std::move(outq_.front());
+  outq_.pop_front();
 
-    asio::async_write(
-        socket_,
-        asio::buffer(*msg),
-        [this, msg = std::move(msg)](boost::system::error_code errc, std::size_t /* bytes */) {
-            writing_ = false;
-            if (errc) {
-                Log::sync()->warn("Sync write error: {}", errc.message());
-                schedule_reconnect();
-                return;
-            }
+  asio::async_write(socket_, asio::buffer(*msg),
+                    [this, msg = std::move(msg)](boost::system::error_code errc,
+                                                 std::size_t /* bytes */) {
+                      writing_ = false;
+                      if (errc) {
+                        Log::sync()->warn("Sync write error: {}",
+                                          errc.message());
+                        schedule_reconnect();
+                        return;
+                      }
 
-            do_write();
-        });
+                      do_write();
+                    });
 }
 
-void SyncWorkerClient::handle_line(const std::string& line) {
-    boost::system::error_code jec;
-    json::object obj;
+void SyncWorkerClient::handle_line(const std::string &line) {
+  boost::system::error_code jec;
+  json::object obj;
 
-    if (!parse_line(line, obj, jec)) {
-        return;
+  if (!parse_line(line, obj, jec)) {
+    return;
+  }
+
+  const auto *type = get_string(obj, "type");
+  if (!type) {
+    return;
+  }
+
+  if (*type == kTypePong) {
+    const auto *ping_sent_ns = get_int64(obj, "ping_sent");
+    const auto *ping_recv_ns = get_int64(obj, "ping_recv");
+    if (!ping_sent_ns || !ping_recv_ns) {
+      return;
     }
 
-    const auto* type = get_string(obj, "type");
-    if (!type) {
-        return;
+    const int64_t pong_recv_ns = system_clock_now_ns();
+
+    // NTP-style offset: assume network is symmetric so ping arrived at
+    // master at ping_sent_ns + rtt/2.  offset > 0 means master clock is
+    // ahead of ours; subtract offset from master timestamps to get local.
+    const int64_t rtt = pong_recv_ns - *ping_sent_ns;
+    const int64_t offset = *ping_recv_ns - (*ping_sent_ns + rtt / 2);
+
+    // Keep only the sample with the lowest RTT — high-RTT samples have
+    // more asymmetry noise and would worsen the estimate.
+    if (rtt < best_rtt_ns_) {
+      best_rtt_ns_ = rtt;
+      best_offset_ns_ = offset;
     }
 
-    if (*type == kTypePong) {
-        const auto* ping_sent_ns = get_int64(obj, "ping_sent");
-        const auto* ping_recv_ns = get_int64(obj, "ping_recv");
-        if (!ping_sent_ns || !ping_recv_ns) {
+    return;
+  }
+
+  if (*type == kTypeStartAt) {
+    const auto *at_master_ns = get_int64(obj, "at");
+    if (!at_master_ns) {
+      return;
+    }
+
+    const int64_t at_local_ns = *at_master_ns - best_offset_ns_;
+
+    timer_.expires_at(to_steady_time_point(at_local_ns));
+    timer_.async_wait(boost::asio::bind_executor(
+        io_ctx_, [this](boost::system::error_code errc) {
+          if (errc) {
             return;
-        }
+          }
 
-        const int64_t pong_recv_ns = system_clock_now_ns();
-
-        // NTP-style offset: assume network is symmetric so ping arrived at
-        // master at ping_sent_ns + rtt/2.  offset > 0 means master clock is
-        // ahead of ours; subtract offset from master timestamps to get local.
-        const int64_t rtt = pong_recv_ns - *ping_sent_ns;
-        const int64_t offset = *ping_recv_ns - (*ping_sent_ns + rtt / 2);
-
-        // Keep only the sample with the lowest RTT — high-RTT samples have
-        // more asymmetry noise and would worsen the estimate.
-        if (rtt < best_rtt_ns_) {
-            best_rtt_ns_ = rtt;
-            best_offset_ns_ = offset;
-        }
-
-        return;
-    }
-
-    if (*type == kTypeStartAt) {
-        const auto* at_master_ns = get_int64(obj, "at");
-        if (!at_master_ns) {
+          if (!media_recorder_) {
             return;
-        }
+          }
 
-        const int64_t at_local_ns = *at_master_ns - best_offset_ns_;
+          if (media_recorder_->is_recording()) {
+            return;
+          }
 
-        timer_.expires_at(to_steady_time_point(at_local_ns));
-        timer_.async_wait(boost::asio::bind_executor(io_ctx_, [this](boost::system::error_code errc) {
-            if (errc) {
-                return;
-            }
+          if (auto res = media_recorder_->start(); !res) {
+            Log::sync()->warn(
+                "Failed starting media recorder from sync command: {}",
+                res.error().what());
+            return;
+          }
 
-            if (!media_recorder_) {
-                return;
-            }
-
-            if (media_recorder_->is_recording()) {
-                return;
-            }
-
-            if (auto res = media_recorder_->start(); !res) {
-                Log::sync()->warn("Failed starting media recorder from sync command: {}", res.error().what());
-                return;
-            }
-
-            Log::sync()->info("Media recorder started by sync command");
+          Log::sync()->info("Media recorder started by sync command");
         }));
 
-        return;
+    return;
+  }
+
+  if (*type == kTypeSaveAt) {
+    const auto *at_master_ns = get_int64(obj, "at");
+    if (!at_master_ns) {
+      return;
     }
 
+    const int64_t at_local_ns = *at_master_ns - best_offset_ns_;
 
-    if (*type == kTypeSaveAt) {
-        const auto* at_master_ns = get_int64(obj, "at");
-        const auto* output_path = get_string(obj, "output_path");
-        if (!at_master_ns || !output_path) {
+    timer_.expires_at(to_steady_time_point(at_local_ns));
+    timer_.async_wait(boost::asio::bind_executor(
+        io_ctx_, [this](boost::system::error_code errc) {
+          if (errc) {
             return;
-        }
+          }
 
-        const int64_t at_local_ns = *at_master_ns - best_offset_ns_;
+          if (!media_recorder_) {
+            return;
+          }
 
-        timer_.expires_at(to_steady_time_point(at_local_ns));
-        timer_.async_wait(
-            boost::asio::bind_executor(io_ctx_, [this](boost::system::error_code errc) {
-                if (errc) {
-                    return;
-                }
+          if (auto res = media_recorder_->save_and_upload_async(); !res) {
+            Log::sync()->warn("Failed save and upload from sync command: {}",
+                              res.error().what());
+            return;
+          }
 
-                if (!media_recorder_) {
-                    return;
-                }
+          Log::sync()->info("Media recorder save and upload command succeeded");
+        }));
 
-                if (auto res = media_recorder_->save_and_upload_async(); !res) {
-                    Log::sync()->warn("Failed save and upload from sync command: {}", res.error().what());
-                    return;
-                }
-
-                Log::sync()->info("Media recorder save and upload command succeeded");
-            }));
-
-        return;
-    }
+    return;
+  }
 }
 
 void SyncWorkerClient::schedule_reconnect() {
-    close();
+  close();
 
-    if (!running_) {
-        return;
-    }
+  if (!running_) {
+    return;
+  }
 
-    timer_.expires_after(std::chrono::seconds(1));
-    timer_.async_wait(boost::asio::bind_executor(io_ctx_, [this](boost::system::error_code errc) {
+  timer_.expires_after(std::chrono::seconds(1));
+  timer_.async_wait(boost::asio::bind_executor(
+      io_ctx_, [this](boost::system::error_code errc) {
         if (errc || !running_ || connected_) {
-            return;
+          return;
         }
 
         do_connect();
-    }));
+      }));
 }
 
 void SyncWorkerClient::schedule_ping() {
-    if (!running_ || !connected_) {
-        return;
-    }
+  if (!running_ || !connected_) {
+    return;
+  }
 
-    static constexpr auto kPingIntervalMs = 250;
+  static constexpr auto kPingIntervalMs = 250;
 
-    ping_timer_.expires_after(std::chrono::milliseconds(kPingIntervalMs));
-    ping_timer_.async_wait(boost::asio::bind_executor(io_ctx_, [this](boost::system::error_code errc) {
+  ping_timer_.expires_after(std::chrono::milliseconds(kPingIntervalMs));
+  ping_timer_.async_wait(boost::asio::bind_executor(
+      io_ctx_, [this](boost::system::error_code errc) {
         if (errc || !running_ || !connected_) {
-            return;
+          return;
         }
 
         send(ping(system_clock_now_ns()));
         schedule_ping();
-    }));
+      }));
 }
 
 void SyncWorkerClient::close() {
-    connected_ = false;
-    writing_ = false;
+  connected_ = false;
+  writing_ = false;
 
-    timer_.cancel();
-    ping_timer_.cancel();
+  timer_.cancel();
+  ping_timer_.cancel();
 
-    socket_.close();
+  socket_.close();
 
-    outq_.clear();
-    in_.clear();
+  outq_.clear();
+  in_.clear();
 }

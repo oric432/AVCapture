@@ -1,42 +1,44 @@
 #pragma once
 
+#include "boost/asio/io_context.hpp"
 #include "types.hpp"
 #include "utils/error.hpp"
-#include "boost/asio/io_context.hpp"
+
 
 #include <boost/beast/core/flat_buffer.hpp>
 #include <memory>
 #include <string>
 
 namespace VSCapture::Core {
-    class MediaRecorder;
+class MediaRecorder;
 }
 
 namespace VSCapture::Sync {
 class SyncMasterServer {
 public:
-    SyncMasterServer(asio::io_context& io_ctx, std::string bind_ip, unsigned short port,
-                     std::shared_ptr<Core::MediaRecorder> media_recorder);
+  SyncMasterServer(asio::io_context &io_ctx, std::string bind_ip,
+                   unsigned short port,
+                   std::shared_ptr<Core::MediaRecorder> media_recorder);
 
-    Error::VoidResult start();
-    void send_start_at(int64_t t0_master_ns);
-    void send_save_at(int64_t master_ns, const std::string& output_path);
+  Error::VoidResult start();
+  void send_start_at(int64_t t0_master_ns);
+  void send_save_at(int64_t master_ns);
 
 private:
-    struct Session;
-    void do_accept();
-    void on_worker_connected();
-    void on_warmup_timer();
-    void on_start_timer();
+  struct Session;
+  void do_accept();
+  void on_worker_connected();
+  void on_warmup_timer();
+  void on_start_timer();
 
-    asio::io_context& io_ctx_;
-    tcp::acceptor acceptor_;
-    std::string bind_ip_;
-    unsigned short port_{};
+  asio::io_context &io_ctx_;
+  tcp::acceptor acceptor_;
+  std::string bind_ip_;
+  unsigned short port_{};
 
-    std::weak_ptr<Session> worker_;
-    std::shared_ptr<Core::MediaRecorder> media_recorder_;
+  std::weak_ptr<Session> worker_;
+  std::shared_ptr<Core::MediaRecorder> media_recorder_;
 
-    asio::steady_timer timer_;
+  asio::steady_timer timer_;
 };
 } // namespace VSCapture::Sync
