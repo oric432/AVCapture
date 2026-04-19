@@ -14,33 +14,44 @@ ArtifactExporter::ArtifactExporter(Platform::RecordingConfig &cfg)
 ArtifactExporter::~ArtifactExporter() = default;
 
 Result<std::string> ArtifactExporter::save_and_upload(RollingSegment &segmenter,
-                                                      Nfs::IFileBackend &nfs) {
-  auto bundle = prepare();
+                                                      Nfs::IFileBackend &nfs,
+                                                      std::string_view id) {
+  auto bundle = prepare(id);
   if (!bundle) {
     return std::unexpected(
         bundle.error().with_context("Failed creating bundle paths"));
   }
 
-  if (auto res = export_mp4(segmenter, bundle.value()); !res) {
+  if (auto res = execute(segmenter, nfs, bundle.value()); !res) {
+    return std::unexpected(res.error());
+  }
+
+  return bundle->remote_final_;
+}
+
+VoidResult ArtifactExporter::execute(RollingSegment &segmenter,
+                                     Nfs::IFileBackend &nfs,
+                                     const BundlePaths &bundle) {
+  if (auto res = export_mp4(segmenter, bundle); !res) {
     return std::unexpected(res.error().with_context("Failed exporting mp4"));
   }
 
-  if (auto res = zip_bundle(bundle.value()); !res) {
+  if (auto res = zip_bundle(bundle); !res) {
     return std::unexpected(res.error().with_context("Failed zipping bundle"));
   }
 
   if (!config_.nfs.save_locally_) {
-    if (auto res = upload(nfs, bundle.value()); !res) {
+    if (auto res = upload(nfs, bundle); !res) {
       return std::unexpected(
           res.error().with_context("Failed uploading to nfs"));
     }
   }
 
-  cleanup(bundle.value());
-  return bundle->remote_final_;
+  cleanup(bundle);
+  return {};
 }
 
-Result<ArtifactExporter::BundlePaths> ArtifactExporter::prepare() const {
+Result<ArtifactExporter::BundlePaths> ArtifactExporter::prepare(std::string_view id) const {
   auto segments = get_number_of_segments();
   std::filesystem::path tmp_path;
 
@@ -74,7 +85,7 @@ Result<ArtifactExporter::BundlePaths> ArtifactExporter::prepare() const {
 
   auto bundle_dir =
       VSLogs::build_bundle_folder(tmp_path, log_path, config_.nfs.save_locally_,
-                                  config_.vs.type_, config_.role_type_);
+                                  config_.vs.type_, config_.role_type_, id);
   if (!bundle_dir) {
     return std::unexpected(
         bundle_dir.error().with_context("Failed creating bundle dir"));

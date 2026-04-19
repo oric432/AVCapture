@@ -10,6 +10,8 @@ using namespace VSCapture::Core;
 using namespace VSCapture::Error;
 using namespace VSCapture;
 
+MediaRecorder::MediaRecorder() = default;
+
 MediaRecorder::~MediaRecorder() {
     stop();
 }
@@ -81,6 +83,7 @@ VoidResult MediaRecorder::initialize(Platform::RecordingConfig& recorder_config)
     }
 
     nfs_client_ = std::make_unique<Nfs::Client>();
+    exporter_ = std::make_unique<ArtifactExporter>(recorder_config_);
 
     return {};
 }
@@ -121,22 +124,18 @@ bool MediaRecorder::is_recording() {
            (screen_recorder_ != nullptr && screen_recorder_->is_recording());
 }
 
-Result<std::string> MediaRecorder::save_and_upload() {
-    static ArtifactExporter exporter{recorder_config_};
-
-    auto res = exporter.save_and_upload(segmenter_, *nfs_client_);
+Result<std::string> MediaRecorder::save_and_upload(std::string_view id) {
+    auto res = exporter_->save_and_upload(segmenter_, *nfs_client_, id);
     if (!res) {
         return std::unexpected(res.error().with_context("Failed saving and uploading"));
     }
 
     Log::media_recorder()->info("Saved artifact to: {}", res.value());
-
     return res.value();
 }
 
-VoidResult MediaRecorder::save_and_upload_async() {
+Result<std::string> MediaRecorder::save_and_upload_async(std::string id) {
     bool expected = false;
-    // checking if thread is joinable by itself is not enough we need a flag as well
     if (!save_in_progress_.compare_exchange_strong(expected, true)) {
         return std::unexpected(make_error().with_context("Save already in progress"));
     }
@@ -145,17 +144,22 @@ VoidResult MediaRecorder::save_and_upload_async() {
         save_thread_.join();
     }
 
-    save_thread_ = std::jthread([this]() mutable {
-        auto res = this->save_and_upload();
-        if (!res) {
-            Log::media_recorder()->error("Failed saving recording: {}", res.error().what());
-        }
-        else {
-            Log::media_recorder()->info("Saved recording and logs to: {}", res.value());
-        }
+    auto bundle = exporter_->prepare(id);
+    if (!bundle) {
+        save_in_progress_.store(false, std::memory_order_release);
+        return std::unexpected(bundle.error().with_context("Failed preparing bundle"));
+    }
 
+    std::string name = bundle->remote_final_;
+
+    save_thread_ = std::jthread([this, b = std::move(bundle.value())]() mutable {
+        if (auto res = exporter_->execute(segmenter_, *nfs_client_, b); !res) {
+            Log::media_recorder()->error("Failed saving recording: {}", res.error().what());
+        } else {
+            Log::media_recorder()->info("Saved recording and logs to: {}", b.remote_final_);
+        }
         save_in_progress_.store(false, std::memory_order_release);
     });
 
-    return {};
+    return name;
 }

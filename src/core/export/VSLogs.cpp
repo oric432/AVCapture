@@ -69,16 +69,8 @@ Error::Result<std::filesystem::path> build_bundle_folder(
     const std::filesystem::path& src_log,
     bool save_localy,
     VsType vs_type,
-    RoleType role_type) {
-    auto now = std::chrono::system_clock::now();
-    auto time = std::chrono::system_clock::to_time_t(now);
-    std::tm tm{};
-#ifdef _WIN32
-    localtime_s(&tm, &time);
-#else
-    localtime_r(&time, &tm);
-#endif
-
+    RoleType role_type,
+    std::string_view id) {
     std::string prefix;
     if (!save_localy) {
         switch (role_type) {
@@ -88,14 +80,27 @@ Error::Result<std::filesystem::path> build_bundle_folder(
         }
     }
 
-    const auto folder_name = prefix + std::format(
-        "bug_{:02}-{:02}-{:04}_{:02}-{:02}-{:02}",
-        tm.tm_mday,
-        tm.tm_mon + 1,
-        tm.tm_year + 1900,
-        tm.tm_hour,
-        tm.tm_min,
-        tm.tm_sec);
+    std::string folder_name;
+    if (!id.empty()) {
+        folder_name = prefix + "bug_" + std::string(id);
+    } else {
+        auto now = std::chrono::system_clock::now();
+        auto time = std::chrono::system_clock::to_time_t(now);
+        std::tm tm{};
+#ifdef _WIN32
+        localtime_s(&tm, &time);
+#else
+        localtime_r(&time, &tm);
+#endif
+        folder_name = prefix + std::format(
+            "bug_{:02}-{:02}-{:04}_{:02}-{:02}-{:02}",
+            tm.tm_mday,
+            tm.tm_mon + 1,
+            tm.tm_year + 1900,
+            tm.tm_hour,
+            tm.tm_min,
+            tm.tm_sec);
+    }
     std::filesystem::path bundle_dir{};
 
     if (save_localy) {

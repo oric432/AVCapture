@@ -13,10 +13,6 @@ public:
     explicit ArtifactExporter(Platform::RecordingConfig& cfg);
     ~ArtifactExporter();
 
-    Error::Result<std::string>
-    save_and_upload(RollingSegment& segmenter, Nfs::IFileBackend& nfs);
-
-private:
     struct BundlePaths {
         std::filesystem::path bundle_dir_;
         std::filesystem::path output_mp4_;
@@ -26,7 +22,13 @@ private:
         size_t segments_to_export_;
     };
 
-    Error::Result<BundlePaths> prepare() const;
+    Error::Result<std::string>
+    save_and_upload(RollingSegment& segmenter, Nfs::IFileBackend& nfs, std::string_view id = "");
+
+    Error::Result<BundlePaths> prepare(std::string_view id = "") const;
+    Error::VoidResult execute(RollingSegment& segmenter, Nfs::IFileBackend& nfs, const BundlePaths& bundle_paths);
+
+private:
     Error::VoidResult export_mp4(RollingSegment& segmenter, const BundlePaths& bundle_paths) const;
     Error::VoidResult zip_bundle(const BundlePaths& bundle_paths) const;
     Error::VoidResult upload(Nfs::IFileBackend& nfs, const BundlePaths& bundle_paths) const;
@@ -37,9 +39,6 @@ private:
     }
 
     Platform::RecordingConfig config_;
-
-    std::atomic<bool> save_in_progress_{false};
-    std::jthread save_thread_;
 };
 
 
