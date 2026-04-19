@@ -50,3 +50,19 @@
 7. **Improve Sync Master Message Logs**: Add detailed message handling logs inside the sync master class so message streams are easier to trace.
 8. **Rename `buffer duration`**: Change the variable name `buffer duration` to something more descriptive like `recording_length_seconds`.
 9. **Unify threads to C++20 `std::jthread`**: Do a sweep of the codebase and replace any standard `std::thread` instances with `std::jthread` to centralize behavior around automatic cancellation and join on destruction.
+
+### Branch 6: `refactor/sync-protocol-cleanup`
+*Focuses on cleaning up the sync protocol messages and error handling.*
+
+1. **Remove `output_path` from `save_at` message**: The `output_path` field in the `save_at` sync message is not used by the worker — remove it from the protocol (both the master send side and the worker receive side).
+2. **Graceful EOF handling in boost handlers**: In all `async_read` error callbacks, check for `asio::error::eof` (and related codes like `asio::error::connection_reset`) and call `close()` silently instead of logging a warning. Reserve the warning log for unexpected errors only.
+3. **Evaluate single timer in SyncWorkerClient**: `timer_` is already dual-purpose (reconnect + cmd scheduling). `ping_timer_` fires every 250ms independently while connected. Merging them would require tracking `next_ping_time` as state and always scheduling `min(next_ping, next_cmd)` — this adds complexity without a clear benefit. Keep two timers unless there is a specific reason to consolidate.
+
+### Branch 7: `feature/api-response-and-role-cleanup`
+*Focuses on API response structure and removing unused assembly logic.*
+
+1. **Remove "bug assemble" (audio+video combine logic)**: Remove the code that combines audio and video into a unified recording. This is handled by another backend — the logic here is redundant and can be deleted along with its supporting structures.
+2. **Structured JSON response on save**: When the `/stop` (or save) API endpoint completes, return a structured JSON response based on the current `RoleType`:
+   - `RoleType::kNone`: `{ "success": true, "vsType": "VS", "recordingName": "<name>" }`
+   - `RoleType::kVideo`: `{ "success": true, "vsType": "SPLIT", "recordingName": "<name>" }`
+   - On failure: `{ "success": false, "error": "<description>" }`
