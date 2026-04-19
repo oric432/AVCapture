@@ -92,6 +92,7 @@ Platform::RecordingConfig make_recording_config(const Settings& settings) {
     cfg.nfs.server_address_ = settings.get<std::string>(Settings::Path::kNFS_SERVER_ADDRESS);
     cfg.nfs.export_path_ = settings.get<std::string>(Settings::Path::kNFS_EXPORT_PATH);
     cfg.vs.app_path_ = settings.get<std::string>(Settings::Path::kVS_APP_PATH);
+    cfg.vs.log_path_ = settings.get<std::string>(Settings::Path::kVS_LOG_PATH);
 
     const auto vs_type_str = settings.get<std::string>(Settings::Path::kVS_TYPE);
     if (auto vs_type = Utils::parse_vs_type(vs_type_str)) {

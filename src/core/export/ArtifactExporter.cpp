@@ -57,15 +57,19 @@ Result<ArtifactExporter::BundlePaths> ArtifactExporter::prepare() const {
   std::filesystem::path log_path{};
 
   if (config_.vs.type_ == VsType::kVS) {
-    auto ver = VSCapture::VSLogs::read_app_version(
-        std::format("{}/client_configuration.json", config_.vs.app_path_));
-    if (!ver) {
-      Log::media_recorder()->warn(
-          "Failed finding version at: {}",
-          std::format("{}/client_configuration.json", config_.vs.app_path_));
+    if (!config_.vs.log_path_.empty()) {
+      log_path = config_.vs.log_path_;
     } else {
-      log_path = std::format("{}/versions/vs-{}/logs", config_.vs.app_path_,
-                             ver.value());
+      auto ver = VSCapture::VSLogs::read_app_version(
+          std::format("{}/client_configuration.json", config_.vs.app_path_));
+      if (!ver) {
+        Log::media_recorder()->warn(
+            "Failed finding version at: {}",
+            std::format("{}/client_configuration.json", config_.vs.app_path_));
+      } else {
+        log_path = std::format("{}/versions/vs-{}/logs", config_.vs.app_path_,
+                               ver.value());
+      }
     }
   } else if (config_.vs.type_ == VsType::kSoft) {
     log_path = config_.vs.app_path_;

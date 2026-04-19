@@ -26,6 +26,7 @@ export_path = ""
 [vs]
 app_path = "C:/KoUpdater"
 type = "VS"
+log_path = ""  # if set, used directly as VS log directory; otherwise auto-detected from client_configuration.json
 
 [sync]
 role = "none"

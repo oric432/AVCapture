@@ -44,6 +44,7 @@ public:
         [vs]
         app_path = "C:/KoUpdater"
         type = "VS"
+        log_path = ""
 
         [sync]
         role = "none"
@@ -81,6 +82,7 @@ public:
         // vs
         static constexpr auto kVS_APP_PATH = "vs.app_path";
         static constexpr auto kVS_TYPE = "vs.type";
+        static constexpr auto kVS_LOG_PATH = "vs.log_path";
 
 
         static constexpr auto kROLE = "sync.role";

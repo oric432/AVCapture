@@ -44,6 +44,9 @@ struct RecordingConfig {
     struct VsSettings {
         std::string app_path_ = "C:/KoUpdater";
         VsType type_ = VsType::kVS;
+        // If non-empty, used directly as the log directory path.
+        // If empty, the path is auto-detected from client_configuration.json.
+        std::string log_path_;
     };
 
     VideoSettings video;
