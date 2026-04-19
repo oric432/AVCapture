@@ -62,8 +62,7 @@ private:
     Platform::IScreenRecorder* screen_recorder_{nullptr};
     AudioCapturer* audio_capturer_{nullptr};
 
-    std::atomic<bool> running_{false};
-    std::thread th_;
+    std::jthread th_;
 
     std::atomic<uint64_t> seq_{0};
 };

@@ -42,19 +42,20 @@ void RollingSegment::remove_segment_dir() noexcept {
 }
 
 Error::VoidResult RollingSegment::start() {
-    if (running_.exchange(true)) {
+    if (th_.joinable()) {
         return {};
     }
 
     if (auto res = create_segment_dir(); !res) {
-        running_.store(false);
         return res;
     }
 
-    th_ = std::thread([this] {
-        while (running_.load(std::memory_order_acquire)) {
+    th_ = std::jthread([this](std::stop_token st) {
+        while (!st.stop_requested()) {
             std::this_thread::sleep_for(std::chrono::seconds(config_.segment_seconds_));
-
+            if (st.stop_requested()) {
+                break;
+            }
             if (auto res = tick_save_one_segment(); !res) {
                 Log::media_recorder()->error("Segment tick failed: {}", res.error().what());
             }
@@ -63,14 +64,14 @@ Error::VoidResult RollingSegment::start() {
 
     return {};
 }
+
 void RollingSegment::stop() noexcept {
-    if (!running_.exchange(false)) {
+    if (!th_.joinable()) {
         return;
     }
 
-    if (th_.joinable()) {
-        th_.join();
-    }
+    th_.request_stop();
+    th_.join();
 
     remove_segment_dir();
     seq_.exchange(0, std::memory_order::acq_rel);

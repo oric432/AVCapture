@@ -59,7 +59,7 @@ VoidResult ScreenRecorderBase::start() {
 
     encoder_queue_.start();
 
-    record_thread_ = std::thread(&ScreenRecorderBase::recording_loop, this);
+    record_thread_ = std::jthread([this](std::stop_token st) { recording_loop(st); });
 
     return {};
 }
@@ -71,9 +71,8 @@ void ScreenRecorderBase::stop() {
 
     is_recording_.store(false, std::memory_order::relaxed);
 
-    if (record_thread_.joinable()) {
-        record_thread_.join();
-    }
+    record_thread_.request_stop();
+    record_thread_.join();
 
     encoder_queue_.stop();
 }
@@ -82,11 +81,11 @@ bool ScreenRecorderBase::is_recording() const {
     return is_recording_.load(std::memory_order::relaxed);
 }
 
-void ScreenRecorderBase::recording_loop() {
+void ScreenRecorderBase::recording_loop(std::stop_token st) {
     auto next_frame_time = std::chrono::steady_clock::now();
     const auto frame_duration = std::chrono::microseconds(1'000'000 / config_.fps_);
 
-    while (is_recording_.load(std::memory_order::relaxed)) {
+    while (!st.stop_requested()) {
         // Capture frame
         capture_frame();
 

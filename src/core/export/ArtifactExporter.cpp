@@ -11,11 +11,7 @@ using namespace VSCapture;
 ArtifactExporter::ArtifactExporter(Platform::RecordingConfig &cfg)
     : config_(cfg) {}
 
-ArtifactExporter::~ArtifactExporter() {
-  if (save_thread_.joinable()) {
-    save_thread_.join();
-  }
-}
+ArtifactExporter::~ArtifactExporter() = default;
 
 Result<std::string> ArtifactExporter::save_and_upload(RollingSegment &segmenter,
                                                       Nfs::IFileBackend &nfs) {

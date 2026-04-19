@@ -39,7 +39,7 @@ private:
     Platform::RecordingConfig config_;
 
     std::atomic<bool> save_in_progress_{false};
-    std::thread save_thread_;
+    std::jthread save_thread_;
 };
 
 

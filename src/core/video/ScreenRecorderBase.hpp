@@ -38,7 +38,7 @@ protected:
     virtual Core::RotationType get_rotation_type(int rotation) = 0;
 
     // Common recording loop
-    void recording_loop();
+    void recording_loop(std::stop_token st);
     int64_t get_next_frame_pts();
 
     // NOLINTBEGIN(cppcoreguidelines-non-private-member-variables-in-classes)
@@ -57,7 +57,7 @@ protected:
 
     std::atomic<bool> is_recording_{false};
     std::atomic<bool> is_initialized_{false};
-    std::thread record_thread_;
+    std::jthread record_thread_;
 
     std::chrono::steady_clock::time_point recording_start_time_;
     int64_t last_frame_pts_ = 0;
