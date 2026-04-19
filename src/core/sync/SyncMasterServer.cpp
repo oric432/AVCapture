@@ -42,8 +42,12 @@ private:
             (strand_), [self = shared_from_this()](
                            boost::system::error_code errc, std::size_t bytes) {
               if (errc) {
-                Log::sync()->warn("Sync worker session read error: {}",
-                                  errc.message());
+                if (errc != asio::error::eof &&
+                    errc != asio::error::connection_reset &&
+                    errc != asio::error::operation_aborted) {
+                  Log::sync()->warn("Sync worker session read error: {}",
+                                    errc.message());
+                }
                 self->close();
                 return;
               }

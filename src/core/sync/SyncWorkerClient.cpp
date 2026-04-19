@@ -101,7 +101,11 @@ void SyncWorkerClient::do_read() {
       socket_, asio::dynamic_buffer(in_), '\n',
       [this](boost::system::error_code errc, std::size_t bytes) {
         if (errc) {
-          Log::sync()->warn("Sync read error: {}", errc.message());
+          if (errc != asio::error::eof &&
+              errc != asio::error::connection_reset &&
+              errc != asio::error::operation_aborted) {
+            Log::sync()->warn("Sync read error: {}", errc.message());
+          }
           if (media_recorder_ && media_recorder_->is_recording()) {
             media_recorder_->stop();
           }
@@ -128,8 +132,10 @@ void SyncWorkerClient::do_write() {
                                                  std::size_t /* bytes */) {
                       writing_ = false;
                       if (errc) {
-                        Log::sync()->warn("Sync write error: {}",
-                                          errc.message());
+                        if (errc != asio::error::operation_aborted) {
+                          Log::sync()->warn("Sync write error: {}",
+                                            errc.message());
+                        }
                         schedule_reconnect();
                         return;
                       }
