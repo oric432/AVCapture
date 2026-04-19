@@ -44,8 +44,8 @@ unify jthread throghout the project, dont use regular threads
 
 remove bug assemble (and the logic that combines the audio video, there is no need for it)
 
-    return {{"type", "save_at"}, {"at", master_ns}, {"output_path", output_path}};
+{{"type", "save_at"}, {"at", master_ns}, {"output_path", output_path}} - output path is not really necesarry 
 
-output_path in save_at message is not necessary - remove it from protocol
-when saving recording on api call return structured json based on roletype (see todos.md branch 7)
-do you think i can use just one timer in sync worker client? (assessment: keep two timers - ping is independent of cmd/reconnect scheduling)
+in boost handlers when checking for error codes check if its asio::error::eof and if so just close the connection, and if needed for more like connection closed etc...
+
+do you think i can use just one timer in sync worker client? 

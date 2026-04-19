@@ -86,7 +86,7 @@ set(COMMON_SOURCES
     # sync
     src/core/sync/SyncMasterServer.cpp
     src/core/sync/SyncWorkerClient.cpp
-    src/core/sync/BugAssembler.cpp
+
 )
 
 set(PLATFORM_SOURCES "")

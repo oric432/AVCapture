@@ -2,10 +2,8 @@
 #include "export/ArtifactExporter.hpp"
 #include "audio/AudioCapturer.hpp"
 #include "audio/AudioConfig.hpp"
-#include "storage/IFileBackend.hpp"
 #include "RollingSegments.hpp"
 #include "video/VideoConfig.hpp"
-#include "sync/BugAssembler.hpp"
 #include "MediaRecorder.hpp"
 
 using namespace VSCapture::Core;
@@ -156,29 +154,6 @@ VoidResult MediaRecorder::save_and_upload_async() {
             Log::media_recorder()->info("Saved recording and logs to: {}", res.value());
         }
 
-        if (!recorder_config_.nfs.save_locally_ && recorder_config_.role_type_ == RoleType::kVideo) {
-            std::this_thread::sleep_for(std::chrono::seconds(1));
-
-            static Sync::BugAssembler assembler(*nfs_client_);
-
-            Sync::AssemblerSpec spec;
-
-            std::string no_prefix_foldername= res->substr(6); 
-
-            spec.nfs_audio_zip_ = "/audio_" + no_prefix_foldername;
-            spec.nfs_video_zip_ = "/" + res.value();
-            spec.nfs_out_dir_ = "/";
-            spec.bug_folder_name_ = no_prefix_foldername.erase(no_prefix_foldername.size() - 4);
-
-            if (auto init = nfs_client_->initialize(recorder_config_.nfs.server_address_, recorder_config_.nfs.export_path_); !init) {
-                Log::media_recorder()->warn("Failed initializing nfs: {}", init.error().what());
-                return;
-            }
-
-            if (auto assemble_res = assembler.assemble(spec); !assemble_res) {
-                Log::media_recorder()->warn("Assemble failed: {}", assemble_res.error().what());
-            }
-        }
         save_in_progress_.store(false, std::memory_order_release);
     });
 
