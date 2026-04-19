@@ -9,7 +9,7 @@ set(CMAKE_TLS_VERIFY OFF)
 
 # run clang-format on format target
 include(cmake/clang-format.cmake)
-add_clang_format_target(format ${CMAKE_SOURCE_DIR}/src)   
+add_clang_format_target(format ${CMAKE_SOURCE_DIR}/src)
 
 # Prefer static if available 
 set(BUILD_SHARED_LIBS OFF)
@@ -54,35 +54,35 @@ set(COMMON_SOURCES
     # app
     src/main.cpp
     src/Settings.cpp
-    
+
     # core
     src/core/MediaRecorder.cpp
     src/core/RollingSegments.cpp
-    
+
     # api
     src/api/HttpSession.cpp
     src/api/ApiServer.cpp
     src/api/Router.cpp
-    
+
     # video
     src/core/video/ScreenRecorderFactory.cpp
     src/core/video/VideoEncoder.cpp
     src/core/video/VideoEncoderQueue.cpp
     src/core/video/ScreenRecorderBase.cpp
-    
+
     # audio
     src/core/audio/AudioCapturer.cpp
     src/core/audio/AudioEncoder.cpp
     src/core/audio/AudioMixer.cpp
-    
+
     # storage
     src/core/storage/NfsClient.cpp
     src/core/storage/AvioNfsWriter.cpp
-    
+
     # export
     src/core/export/VSLogs.cpp
     src/core/export/ArtifactExporter.cpp
-    
+
     # sync
     src/core/sync/SyncMasterServer.cpp
     src/core/sync/SyncWorkerClient.cpp
@@ -149,19 +149,20 @@ target_link_libraries(VSCapture
     Boost::beast
     Boost::system
     Boost::json
+    Boost::uuid
     nfs
 )
 
 # Platform graphics libs
 if(WIN32)
-    target_link_libraries(VSCapture PRIVATE 
-        d3d11 
+    target_link_libraries(VSCapture PRIVATE
+        d3d11
         dxgi
         FFmpeg::FFmpeg
     )
 elseif(UNIX AND NOT APPLE)
     find_package(X11 REQUIRED COMPONENTS X11 Xext Xfixes)
-    
+
     # X11 libs -> FFmpeg libs -> x264 -> zlib -> system libs (order matters)
     target_link_libraries(VSCapture PRIVATE
         X11::X11
@@ -194,16 +195,16 @@ endif()
 
 if(MSVC)
     target_compile_options(VSCapture PRIVATE "/W4" "/WX")
-    target_compile_definitions(VSCapture PRIVATE "_CRT_SECURE_NO_WARNINGS") 
+    target_compile_definitions(VSCapture PRIVATE "_CRT_SECURE_NO_WARNINGS")
 else()
     # Enable Asan and Ubsan sanitizers for debug builds.
-    if(${CMAKE_BUILD_TYPE} STREQUAL "Debug") 
+    if(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
         myproject_enable_sanitizers(VSCapture
-                                        ON
-                                        OFF
-                                        ON
-                                        OFF
-                                        OFF)  
+            ON
+            OFF
+            ON
+            OFF
+            OFF)
     endif()
 
     target_compile_options(VSCapture PRIVATE -Wall -Wextra -pedantic)

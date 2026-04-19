@@ -39,6 +39,9 @@
 #include "utils/log.hpp"  // IWYU pragma: export
 
 // BOOST
+#include <boost/uuid/uuid.hpp>            // IWYU pragma: export
+#include <boost/uuid/uuid_generators.hpp> // IWYU pragma: export
+#include <boost/uuid/uuid_io.hpp>         // IWYU pragma: export
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/beast/core.hpp>
 #include <boost/beast/http.hpp>
