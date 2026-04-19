@@ -58,15 +58,18 @@ private:
     json::object obj;
 
     if (!parse_line(line, obj, jec)) {
+      Log::sync()->debug("Sync master: failed to parse message: {}", jec.message());
       return;
     }
 
     auto *type = obj.if_contains("type");
     if ((type == nullptr) || !type->is_string()) {
+      Log::sync()->debug("Sync master: received message with missing/invalid type field");
       return;
     }
 
     const auto type_str = type->as_string();
+    Log::sync()->debug("Sync master: received '{}' from worker", std::string_view(type_str));
 
     if (type_str == kTypePing) {
       const auto* ping_sent_ptr = get_int64(obj, "ping_sent");
@@ -93,6 +96,7 @@ private:
                                             std::size_t /* bytes */) {
           self->writing_ = false;
           if (errc) {
+            Log::sync()->debug("Sync worker session write error: {}", errc.message());
             self->cleanup();
             return;
           }
@@ -235,6 +239,10 @@ void SyncMasterServer::on_worker_connected() {
     return;
   }
 
+  // Wait for several ping/pong exchanges before scheduling the synchronized
+  // start. This lets the NTP-style clock-offset estimate converge so the
+  // scheduled timestamp the worker receives is accurate. Without this delay
+  // the first sample (which may have high RTT jitter) would be used directly.
   static constexpr auto kPingPongDelayMs = 1500;
 
   timer_.expires_after(std::chrono::milliseconds(kPingPongDelayMs));
