@@ -36,7 +36,6 @@ private:
   void on_warmup_timer();
   void on_start_timer();
 
-  asio::io_context &io_ctx_;
   tcp::acceptor acceptor_;
   std::string bind_ip_;
   unsigned short port_{};

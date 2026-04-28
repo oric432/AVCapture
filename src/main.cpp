@@ -40,18 +40,14 @@ struct WinsockRAII {
 
 namespace {
 
-bool has_arg(int argc, char** argv, std::string_view key) {
-    for (int i = 0; i < argc; ++i) {
-        if (std::string_view(argv[i]) == key) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
 void platform_init(int argc, char** argv) {
 #ifdef WIN32
+    auto has_arg = [](int argc, char** argv, std::string_view key) {
+        for (int i = 0; i < argc; ++i) {
+            if (std::string_view(argv[i]) == key) return true;
+        }
+        return false;
+    };
     static WinsockRAII winsock; // static so it lives until process exit
 
     // Needed for TaskScheduler

@@ -122,7 +122,7 @@ private:
 SyncMasterServer::SyncMasterServer(
     asio::io_context &io_ctx, std::string bind_ip, unsigned short port,
     std::shared_ptr<Core::MediaRecorder> media_recorder)
-    : io_ctx_(io_ctx), acceptor_(io_ctx), bind_ip_(std::move(bind_ip)),
+    : acceptor_(io_ctx), bind_ip_(std::move(bind_ip)),
       port_(port), media_recorder_(std::move(media_recorder)),
       timer_(io_ctx) {}
 
