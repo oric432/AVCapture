@@ -231,10 +231,9 @@ SyncMasterServer::SplitRecordingNames SyncMasterServer::send_save_at(int64_t mas
         Log::sync()->info("Audio master saved and uploaded successfully");
       });
 
-  const bool locally = media_recorder_ && media_recorder_->save_locally();
   return {
-      std::format("{}bug_{}.zip", locally ? "" : "video_", uuid),
-      std::format("{}bug_{}.zip", locally ? "" : "audio_", uuid),
+      std::format("video_bug_{}.zip", uuid),
+      std::format("audio_bug_{}.zip", uuid),
   };
 }
 

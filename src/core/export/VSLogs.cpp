@@ -72,12 +72,10 @@ Error::Result<std::filesystem::path> build_bundle_folder(
     RoleType role_type,
     std::string_view id) {
     std::string prefix;
-    if (!save_localy) {
-        switch (role_type) {
-        case RoleType::kAudio: prefix = "audio_"; break;
-        case RoleType::kVideo: prefix = "video_"; break;
-        default: break;
-        }
+    switch (role_type) {
+    case RoleType::kAudio: prefix = "audio_"; break;
+    case RoleType::kVideo: prefix = "video_"; break;
+    default: break;
     }
 
     std::string folder_name;

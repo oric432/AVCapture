@@ -37,7 +37,6 @@ public:
     bool is_recording();
 
     RoleType role_type() const { return recorder_config_.role_type_; }
-    bool save_locally() const { return recorder_config_.nfs.save_locally_; }
 
     Error::Result<std::string> save_and_upload(std::string_view id = "");
     Error::Result<std::string> save_and_upload_async(std::string id = "");
