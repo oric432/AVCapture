@@ -70,7 +70,8 @@ Error::Result<std::filesystem::path> build_bundle_folder(
     bool save_localy,
     VsType vs_type,
     RoleType role_type,
-    std::string_view id) {
+    std::string_view id,
+    std::string_view ip) {
     std::string prefix;
     switch (role_type) {
     case RoleType::kAudio: prefix = "audio_"; break;
@@ -102,10 +103,9 @@ Error::Result<std::filesystem::path> build_bundle_folder(
     std::filesystem::path bundle_dir{};
 
     if (save_localy) {
-        bundle_dir = bundles_root / "local_recordings" / folder_name;
-    }
-    else {
-        bundle_dir = bundles_root / folder_name;
+        bundle_dir = bundles_root / "local_recordings" / ip / folder_name;
+    } else {
+        bundle_dir = bundles_root / ip / folder_name;
     }
 
     std::error_code errc;

@@ -3,6 +3,7 @@
 #include "ArtifactExporter.hpp"
 #include "core/export/VSLogs.hpp"
 #include "core/video/IScreenRecorder.hpp"
+#include "utils/NetUtils.hpp"
 
 using namespace VSCapture::Core;
 using namespace VSCapture::Error;
@@ -15,8 +16,9 @@ ArtifactExporter::~ArtifactExporter() = default;
 
 Result<std::string> ArtifactExporter::save_and_upload(RollingSegment &segmenter,
                                                       Nfs::IFileBackend &nfs,
-                                                      std::string_view id) {
-  auto bundle = prepare(id);
+                                                      std::string_view id,
+                                                      std::string_view ip) {
+  auto bundle = prepare(id, ip);
   if (!bundle) {
     return std::unexpected(
         bundle.error().with_context("Failed creating bundle paths"));
@@ -51,7 +53,10 @@ VoidResult ArtifactExporter::execute(RollingSegment &segmenter,
   return {};
 }
 
-Result<ArtifactExporter::BundlePaths> ArtifactExporter::prepare(std::string_view id) const {
+Result<ArtifactExporter::BundlePaths>
+ArtifactExporter::prepare(std::string_view id, std::string_view ip) const {
+  const std::string resolved_ip =
+      ip.empty() ? Utils::local_ip() : std::string(ip);
   auto segments = get_number_of_segments();
   std::filesystem::path tmp_path;
 
@@ -83,9 +88,9 @@ Result<ArtifactExporter::BundlePaths> ArtifactExporter::prepare(std::string_view
     log_path /= "ThinVsLogs";
   }
 
-  auto bundle_dir =
-      VSLogs::build_bundle_folder(tmp_path, log_path, config_.nfs.save_locally_,
-                                  config_.vs.type_, config_.role_type_, id);
+  auto bundle_dir = VSLogs::build_bundle_folder(
+      tmp_path, log_path, config_.nfs.save_locally_, config_.vs.type_,
+      config_.role_type_, id, resolved_ip);
   if (!bundle_dir) {
     return std::unexpected(
         bundle_dir.error().with_context("Failed creating bundle dir"));
@@ -107,7 +112,9 @@ Result<ArtifactExporter::BundlePaths> ArtifactExporter::prepare(std::string_view
   bundle.zip_path_ = bundle.bundle_dir_;
   bundle.zip_path_ += ".zip";
 
-  bundle.remote_final_ = bundle.zip_path_.filename().string();
+  bundle.ip_dir_ = std::format("/{}", resolved_ip);
+  bundle.remote_final_ =
+      std::format("{}/{}", resolved_ip, bundle.zip_path_.filename().string());
   bundle.remote_tmp_ = bundle.remote_final_ + ".tmp";
   bundle.segments_to_export_ = segments;
 
@@ -207,6 +214,12 @@ VoidResult ArtifactExporter::upload(Nfs::IFileBackend &nfs,
       !init) {
     return std::unexpected(
         init.error().with_context("Failed initializing nfs client"));
+  }
+  if (!bundle_paths.ip_dir_.empty()) {
+    if (auto res = nfs.mkdir_p("/" + bundle_paths.ip_dir_); !res) {
+      return std::unexpected(res.error().with_context(std::format(
+          "Failed creating IP dir '{}' on NFS", bundle_paths.ip_dir_)));
+    }
   }
   if (auto upload = upload_zip_streaming(nfs, bundle_paths.zip_path_,
                                          bundle_paths.remote_tmp_,

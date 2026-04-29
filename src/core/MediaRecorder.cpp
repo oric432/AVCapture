@@ -124,8 +124,8 @@ bool MediaRecorder::is_recording() {
            (screen_recorder_ != nullptr && screen_recorder_->is_recording());
 }
 
-Result<std::string> MediaRecorder::save_and_upload(std::string_view id) {
-    auto res = exporter_->save_and_upload(segmenter_, *nfs_client_, id);
+Result<std::string> MediaRecorder::save_and_upload(std::string_view id, std::string_view ip) {
+    auto res = exporter_->save_and_upload(segmenter_, *nfs_client_, id, ip);
     if (!res) {
         return std::unexpected(res.error().with_context("Failed saving and uploading"));
     }
@@ -134,7 +134,7 @@ Result<std::string> MediaRecorder::save_and_upload(std::string_view id) {
     return res.value();
 }
 
-Result<std::string> MediaRecorder::save_and_upload_async(std::string id) {
+Result<std::string> MediaRecorder::save_and_upload_async(std::string id, std::string ip) {
     bool expected = false;
     if (!save_in_progress_.compare_exchange_strong(expected, true)) {
         return std::unexpected(make_error().with_context("Save already in progress"));
@@ -144,7 +144,7 @@ Result<std::string> MediaRecorder::save_and_upload_async(std::string id) {
         save_thread_.join();
     }
 
-    auto bundle = exporter_->prepare(id);
+    auto bundle = exporter_->prepare(id, ip);
     if (!bundle) {
         save_in_progress_.store(false, std::memory_order_release);
         return std::unexpected(bundle.error().with_context("Failed preparing bundle"));

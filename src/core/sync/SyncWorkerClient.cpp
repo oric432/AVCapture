@@ -227,11 +227,15 @@ void SyncWorkerClient::handle_line(const std::string &line) {
     const auto *id_str = get_string(obj, "id");
     std::string recording_id = id_str ? std::string(*id_str) : "";
 
+    const auto *ip_str = get_string(obj, "ip");
+    std::string master_ip = ip_str ? std::string(*ip_str) : "";
+
     const int64_t at_local_ns = *at_master_ns - best_offset_ns_;
 
     timer_.expires_at(to_steady_time_point(at_local_ns));
     timer_.async_wait(boost::asio::bind_executor(
-        io_ctx_, [this, recording_id = std::move(recording_id)](
+        io_ctx_, [this, recording_id = std::move(recording_id),
+                  master_ip = std::move(master_ip)](
                      boost::system::error_code errc) mutable {
           if (errc) {
             return;
@@ -241,7 +245,7 @@ void SyncWorkerClient::handle_line(const std::string &line) {
             return;
           }
 
-          if (auto res = media_recorder_->save_and_upload_async(std::move(recording_id)); !res) {
+          if (auto res = media_recorder_->save_and_upload_async(std::move(recording_id), std::move(master_ip)); !res) {
             Log::sync()->warn("Failed save and upload from sync command: {}",
                               res.error().what());
             return;

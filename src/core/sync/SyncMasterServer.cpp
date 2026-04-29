@@ -2,6 +2,7 @@
 #include "SyncProtocol.hpp"
 #include "SyncTime.hpp"
 #include "core/MediaRecorder.hpp"
+#include "utils/NetUtils.hpp"
 
 using namespace VSCapture::Sync;
 using namespace VSCapture::Error;
@@ -207,21 +208,22 @@ void SyncMasterServer::send_start_at(int64_t t0_master_ns) {
 }
 SyncMasterServer::SplitRecordingNames SyncMasterServer::send_save_at(int64_t master_ns) {
   const std::string uuid = boost::uuids::to_string(boost::uuids::random_generator{}());
+  const std::string master_ip = Utils::local_ip();
 
   if (auto worker = worker_.lock()) {
-    worker->send(save_at(master_ns, uuid));
+    worker->send(save_at(master_ns, uuid, master_ip));
   } else {
     Log::sync()->warn("No sync worker connected; save_at not sent to worker");
   }
 
   timer_.expires_at(Sync::to_steady_time_point(master_ns));
   timer_.async_wait(
-      [this, uuid](const boost::system::error_code & /* errc */) {
+      [this, uuid, master_ip](const boost::system::error_code & /* errc */) {
         if (!media_recorder_ || !media_recorder_->is_recording()) {
           return;
         }
 
-        if (auto res = media_recorder_->save_and_upload_async(uuid); !res) {
+        if (auto res = media_recorder_->save_and_upload_async(uuid, master_ip); !res) {
           Log::sync()->error(
               "Failed saving and uploading in audio master recorder: {}",
               res.error().what());
@@ -232,8 +234,8 @@ SyncMasterServer::SplitRecordingNames SyncMasterServer::send_save_at(int64_t mas
       });
 
   return {
-      std::format("video_bug_{}.zip", uuid),
-      std::format("audio_bug_{}.zip", uuid),
+      std::format("{}/video_bug_{}.zip", master_ip, uuid),
+      std::format("{}/audio_bug_{}.zip", master_ip, uuid),
   };
 }
 

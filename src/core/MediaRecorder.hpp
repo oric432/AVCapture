@@ -38,8 +38,8 @@ public:
 
     RoleType role_type() const { return recorder_config_.role_type_; }
 
-    Error::Result<std::string> save_and_upload(std::string_view id = "");
-    Error::Result<std::string> save_and_upload_async(std::string id = "");
+    Error::Result<std::string> save_and_upload(std::string_view id = "", std::string_view ip = "");
+    Error::Result<std::string> save_and_upload_async(std::string id = "", std::string ip = "");
 
 private:
     std::unique_ptr<Platform::IScreenRecorder> screen_recorder_;
