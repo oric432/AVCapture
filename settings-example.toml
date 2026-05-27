@@ -5,8 +5,8 @@ port = 8084
 [recording]
 fps = 30
 bitrate = 4000000
-buffer_duration = 10
-segment_seconds = 2
+recording_length_seconds = 10
+segment_buffer_seconds = 2
 
 [audio]
 output_device_name = ""
