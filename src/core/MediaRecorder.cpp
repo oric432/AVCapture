@@ -5,7 +5,6 @@
 #include "audio/AudioConfig.hpp"
 #include "video/VideoConfig.hpp"
 
-
 using namespace VSCapture::Core;
 using namespace VSCapture::Error;
 using namespace VSCapture;
@@ -30,7 +29,7 @@ VoidResult MediaRecorder::initialize(RecordingConfig &recorder_config) {
     video_config.fps_ = recorder_config.video.fps_;
     video_config.bitrate_ = recorder_config.video.bitrate_;
     video_config.recording_length_seconds_ =
-        recorder_config.video.segment_seconds_;
+        recorder_config.video.segment_buffer_seconds_;
 
     if (auto res = screen_recorder_->initialize(video_config); !res) {
       return std::unexpected(
@@ -45,7 +44,7 @@ VoidResult MediaRecorder::initialize(RecordingConfig &recorder_config) {
     audio_config.channels_ = recorder_config.audio.channels_;
     audio_config.bitrate_ = recorder_config.audio.bitrate_;
     audio_config.recording_length_seconds_ =
-        recorder_config.video.segment_seconds_;
+        recorder_config.video.segment_buffer_seconds_;
     audio_config.buffer_frame_size_ = recorder_config.audio.buffer_frame_size_;
     audio_config.output_device_name_ =
         recorder_config.audio.output_device_name_;
@@ -60,11 +59,11 @@ VoidResult MediaRecorder::initialize(RecordingConfig &recorder_config) {
   Core::RollingSegment::Config segment_config;
   segment_config.dir_ =
       std::filesystem::temp_directory_path() / "VSCapture" / "ring";
-  segment_config.segment_seconds_ =
-      static_cast<int>(recorder_config.video.segment_seconds_);
+  segment_config.segment_buffer_seconds_ =
+      static_cast<int>(recorder_config.video.segment_buffer_seconds_);
   segment_config.ring_size_ =
       static_cast<size_t>(recorder_config.video.recording_length_seconds_ /
-                          recorder_config.video.segment_seconds_);
+                          recorder_config.video.segment_buffer_seconds_);
 
   if (auto res = segmenter_.initialize(segment_config, screen_recorder_.get(),
                                        &audio_capturer_);
@@ -108,7 +107,7 @@ Result<std::string>
 MediaRecorder::save_recording(std::string_view output_file) {
   size_t segments_to_export =
       static_cast<size_t>(recorder_config_.video.recording_length_seconds_ /
-                          recorder_config_.video.segment_seconds_);
+                          recorder_config_.video.segment_buffer_seconds_);
 
   if (auto res =
           segmenter_.export_last_segments(segments_to_export, output_file);

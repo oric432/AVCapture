@@ -20,7 +20,7 @@ class RollingSegment {
 public:
   struct Config {
     std::filesystem::path dir_;
-    int segment_seconds_ = 10;
+    int segment_buffer_seconds_ = 10;
     size_t ring_size_ = 180;
   };
 

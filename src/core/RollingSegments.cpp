@@ -48,7 +48,7 @@ Error::VoidResult RollingSegment::start() {
   th_ = std::jthread([this](std::stop_token st) {
     while (!st.stop_requested()) {
       std::this_thread::sleep_for(
-          std::chrono::seconds(config_.segment_seconds_));
+          std::chrono::seconds(config_.segment_buffer_seconds_));
       if (st.stop_requested()) {
         break;
       }

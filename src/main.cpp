@@ -55,9 +55,9 @@ Core::RecordingConfig make_recording_config(const Settings &settings) {
   Core::RecordingConfig cfg;
   cfg.video.fps_ = settings.get<int>(Settings::Path::kFPS);
   cfg.video.recording_length_seconds_ =
-      settings.get<int>(Settings::Path::kBUFFER_DURATION);
-  cfg.video.segment_seconds_ =
-      settings.get<int>(Settings::Path::kSEGMENT_SECONDS);
+      settings.get<int>(Settings::Path::kRECORDING_LENGTH_SECONDS);
+  cfg.video.segment_buffer_seconds_ =
+      settings.get<int>(Settings::Path::kSEGMENT_BUFFER_SECONDS);
   cfg.video.bitrate_ = settings.get<int>(Settings::Path::kBITRATE);
 
   cfg.audio.output_device_name_ =

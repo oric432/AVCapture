@@ -20,7 +20,7 @@ struct VideoConfig {
   int fps_ = 5;
   int bitrate_ = 4'000'000; // 4 Mbps
   double recording_length_seconds_ = 10.0;
-  double segment_seconds_ = 2.0;
+  double segment_buffer_seconds_ = 2.0;
   RotationType rotation_ =
       RotationType::kUnspecified; // 0=normal, 1=90deg, 2=180deg, 3=270deg
 };

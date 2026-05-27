@@ -23,8 +23,8 @@ public:
         [recording]
         fps = 30
         bitrate = 4000000
-        buffer_duration = 10
-        segment_seconds = 2
+        recording_length_seconds = 10
+        segment_buffer_seconds = 2
 
         [audio]
         output_device_name = ""
@@ -45,8 +45,10 @@ public:
     // recording
     static constexpr auto kFPS = "recording.fps";
     static constexpr auto kBITRATE = "recording.bitrate";
-    static constexpr auto kBUFFER_DURATION = "recording.buffer_duration";
-    static constexpr auto kSEGMENT_SECONDS = "recording.segment_seconds";
+    static constexpr auto kRECORDING_LENGTH_SECONDS =
+        "recording.recording_length_seconds";
+    static constexpr auto kSEGMENT_BUFFER_SECONDS =
+        "recording.segment_buffer_seconds";
 
     // audio
     static constexpr auto kOUTPUT_DEVICE_NAME = "audio.output_device_name";
