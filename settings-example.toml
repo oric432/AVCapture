@@ -7,7 +7,6 @@ fps = 30
 bitrate = 4000000
 buffer_duration = 10
 segment_seconds = 2
-default_output_path = "output.mp4"
 
 [audio]
 output_device_name = ""
