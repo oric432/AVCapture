@@ -4,7 +4,8 @@ set -e
 # Configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 THIRD_PARTY_DIR="${SCRIPT_DIR}/third_party"
-DUFS_URL="https://dufs.ko/installs/c%2B%2B/libs/x11"
+XORG_RELEASES_URL="${XORG_RELEASES_URL:-https://www.x.org/releases/individual}"
+XCB_RELEASES_URL="${XCB_RELEASES_URL:-https://xcb.freedesktop.org/dist}"
 DOWNLOAD_DIR="${SCRIPT_DIR}/_downloads"
 INSTALL_PREFIX="/usr/local"
 BUILD_DIR="${SCRIPT_DIR}/_build"
@@ -38,10 +39,11 @@ info() {
 print_banner() {
     echo "=================================================="
     echo "  ScreenRecorder Dependencies Build Script"
-    echo "  (Air-gapped environment with DuFS)"
+    echo "  (Online upstream source downloads)"
     echo "=================================================="
     echo "Third-party dir: ${THIRD_PARTY_DIR}"
-    echo "DuFS server URL: ${DUFS_URL}"
+    echo "X.Org releases URL: ${XORG_RELEASES_URL}"
+    echo "XCB releases URL: ${XCB_RELEASES_URL}"
     echo "Download cache: ${DOWNLOAD_DIR}"
     echo "Install prefix: ${INSTALL_PREFIX}"
     echo "Build directory: ${BUILD_DIR}"
@@ -68,17 +70,6 @@ check_dependencies() {
     log "All required tools found!"
 }
 
-# Check DuFS server availability
-check_dufs_server() {
-    log "Checking DuFS server availability..."
-    
-    if curl --connect-timeout 5 --max-time 10 -s -f -o /dev/null "${DUFS_URL}"; then
-        log "DuFS server is accessible at ${DUFS_URL}"
-    else
-        error "Cannot reach DuFS server at ${DUFS_URL}\nMake sure the server is running or set DUFS_URL environment variable"
-    fi
-}
-
 # Verify source directories exist
 verify_sources() {
     log "Verifying source directories..."
@@ -102,9 +93,10 @@ setup_dirs() {
     mkdir -p "${DOWNLOAD_DIR}"
 }
 
-# Download file from DuFS server
-download_from_dufs() {
-    local filename=$1
+# Download file from an upstream URL
+download_file() {
+    local url=$1
+    local filename="${url##*/}"
     local dest_path="${DOWNLOAD_DIR}/${filename}"
     
     # Check if already downloaded
@@ -113,16 +105,14 @@ download_from_dufs() {
         return 0
     fi
     
-    info "Downloading ${filename} from DuFS server..."
+    info "Downloading ${filename}..."
     
-    local download_url="${DUFS_URL}/${filename}"
-    
-    if curl -f -L -o "${dest_path}.tmp" "${download_url}"; then
+    if curl -f -L --connect-timeout 10 --retry 3 -o "${dest_path}.tmp" "${url}"; then
         mv "${dest_path}.tmp" "${dest_path}"
         log "Downloaded ${filename}"
     else
         rm -f "${dest_path}.tmp"
-        error "Failed to download ${filename} from ${download_url}"
+        error "Failed to download ${filename} from ${url}"
     fi
 }
 
@@ -143,8 +133,7 @@ build_x264() {
         --prefix="${INSTALL_PREFIX}" \
         --enable-static \
         --disable-opencl \
-        --disable-cli \
-        --disable-asm
+        --disable-cli
     
     info "Building x264..."
     make -j"${JOBS}"
@@ -205,14 +194,15 @@ build_ffmpeg() {
         --enable-static \
         --disable-shared \
         --disable-debug \
-        --disable-asm \
-        --disable-x86asm \
         --disable-doc \
         --disable-programs \
         --disable-everything \
         --enable-gpl \
         --enable-libx264 \
         --enable-encoder=libx264 \
+        --enable-encoder=h264_nvenc \
+        --enable-encoder=h264_qsv \
+        --enable-encoder=h264_vaapi \
         --enable-encoder=aac \
         --enable-encoder=pcm_s16le \
         --enable-decoder=aac \
@@ -277,13 +267,36 @@ build_x11() {
         ["libXfixes"]="6.0.1"
     )
     
+    package_url() {
+        local name=$1
+        local version=$2
+        local category=$3
+
+        case "${category}" in
+            xorg)
+                echo "${XORG_RELEASES_URL}/lib/${name}-${version}.tar.xz"
+                ;;
+            proto)
+                echo "${XORG_RELEASES_URL}/proto/${name}-${version}.tar.xz"
+                ;;
+            xcb)
+                echo "${XCB_RELEASES_URL}/${name}-${version}.tar.xz"
+                ;;
+            *)
+                error "Unknown package category: ${category}"
+                ;;
+        esac
+    }
+
     download_extract_tarball() {
         local name=$1
         local version=$2
+        local category=$3
         local tarball="${name}-${version}.tar.xz"
-        
-        # Download from DuFS server
-        download_from_dufs "${tarball}"
+        local url
+        url="$(package_url "${name}" "${version}" "${category}")"
+
+        download_file "${url}"
         
         # Extract if not already extracted
         if [ ! -d "${name}-${version}" ]; then
@@ -320,40 +333,40 @@ build_x11() {
     }
     
     # Build dependency in order
-    download_extract_tarball "xorgproto" "${PACKAGES[xorgproto]}"
+    download_extract_tarball "xorgproto" "${PACKAGES[xorgproto]}" "proto"
     build_install "xorgproto" "${PACKAGES[xorgproto]}"
     
-    download_extract_tarball "xtrans" "${PACKAGES[xtrans]}"
+    download_extract_tarball "xtrans" "${PACKAGES[xtrans]}" "xorg"
     build_install "xtrans" "${PACKAGES[xtrans]}"
     
-    download_extract_tarball "libXau" "${PACKAGES[libXau]}"
+    download_extract_tarball "libXau" "${PACKAGES[libXau]}" "xorg"
     build_install "libXau" "${PACKAGES[libXau]}"
     
-    download_extract_tarball "libXdmcp" "${PACKAGES[libXdmcp]}"
+    download_extract_tarball "libXdmcp" "${PACKAGES[libXdmcp]}" "xorg"
     build_install "libXdmcp" "${PACKAGES[libXdmcp]}"
     
-    download_extract_tarball "libpthread-stubs" "${PACKAGES[libpthread-stubs]}"
+    download_extract_tarball "libpthread-stubs" "${PACKAGES[libpthread-stubs]}" "xcb"
     build_install "libpthread-stubs" "${PACKAGES[libpthread-stubs]}"
     
-    download_extract_tarball "xcb-proto" "${PACKAGES[xcb-proto]}"
+    download_extract_tarball "xcb-proto" "${PACKAGES[xcb-proto]}" "xcb"
     build_install "xcb-proto" "${PACKAGES[xcb-proto]}"
     
-    download_extract_tarball "libxcb" "${PACKAGES[libxcb]}"
+    download_extract_tarball "libxcb" "${PACKAGES[libxcb]}" "xcb"
     build_install "libxcb" "${PACKAGES[libxcb]}"
     
-    download_extract_tarball "libX11" "${PACKAGES[libX11]}"
+    download_extract_tarball "libX11" "${PACKAGES[libX11]}" "xorg"
     build_install "libX11" "${PACKAGES[libX11]}"
     
-    download_extract_tarball "libXext" "${PACKAGES[libXext]}"
+    download_extract_tarball "libXext" "${PACKAGES[libXext]}" "xorg"
     build_install "libXext" "${PACKAGES[libXext]}"
 
-    download_extract_tarball "libXrender" "${PACKAGES[libXrender]}"
+    download_extract_tarball "libXrender" "${PACKAGES[libXrender]}" "xorg"
     build_install "libXrender" "${PACKAGES[libXrender]}"
     
-    download_extract_tarball "libXrandr" "${PACKAGES[libXrandr]}"
+    download_extract_tarball "libXrandr" "${PACKAGES[libXrandr]}" "xorg"
     build_install "libXrandr" "${PACKAGES[libXrandr]}"
     
-    download_extract_tarball "libXfixes" "${PACKAGES[libXfixes]}"
+    download_extract_tarball "libXfixes" "${PACKAGES[libXfixes]}" "xorg"
     build_install "libXfixes" "${PACKAGES[libXfixes]}"
     
     log "X11 libraries built successfully!"
@@ -459,20 +472,16 @@ main() {
                 KEEP_DOWNLOADS=true
                 shift
                 ;;
-            --dufs-url)
-                DUFS_URL="$2"
-                shift 2
-                ;;
             -h|--help)
                 echo "Usage: $0 [OPTIONS]"
                 echo
-                echo "Air-gapped build script for ScreenRecorder dependencies"
+                echo "Online build script for ScreenRecorder dependencies"
                 echo
                 echo "Expected directory structure:"
                 echo "  third_party/x264/    - x264 source code"
                 echo "  third_party/FFmpeg/  - FFmpeg source code"
                 echo
-                echo "DuFS server must host X11 library tarballs"
+                echo "X11 source tarballs are downloaded from upstream X.Org and XCB release servers"
                 echo
                 echo "Options:"
                 echo "  --only-x264          Build only x264"
@@ -485,15 +494,14 @@ main() {
                 echo "  --skip-zlib          Skip zlib build"
                 echo "  --keep-build         Keep build directory after completion"
                 echo "  --keep-downloads     Keep downloaded tarballs cache"
-                echo "  --dufs-url URL       DuFS server URL (default: http://localhost:5000)"
                 echo "  -h, --help           Show this help message"
                 echo
                 echo "Environment variables:"
-                echo "  DUFS_URL             Override default DuFS server URL"
+                echo "  XORG_RELEASES_URL    Override X.Org release base URL"
+                echo "  XCB_RELEASES_URL     Override XCB release base URL"
                 echo
                 echo "Example:"
-                echo "  $0 --dufs-url http://192.168.1.100:8080"
-                echo "  DUFS_URL=http://myserver:5000 $0"
+                echo "  XORG_RELEASES_URL=https://www.x.org/releases/individual $0 --only-x11"
                 exit 0
                 ;;
             *)
@@ -503,11 +511,6 @@ main() {
     done
     
     check_dependencies
-    
-    # Only check DuFS if building X11
-    if [ "$BUILD_X11" = true ]; then
-        check_dufs_server
-    fi
     
     verify_sources
     setup_dirs
