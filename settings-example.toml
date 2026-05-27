@@ -17,19 +17,3 @@ input_device_name  = ""
 level = "info"
 max_log_size_bytes = 5242880
 max_files = 5
-
-[nfs]
-save_locally = false
-server_address = ""
-export_path = ""
-
-[vs]
-app_path = "C:/KoUpdater"
-type = "VS"
-log_path = ""  # if set, used directly as VS log directory; otherwise auto-detected from client_configuration.json
-
-[sync]
-role = "none"
-bind_address = "0.0.0.0"
-peer_address = "127.0.0.1"
-port = 45000
