@@ -1,141 +1,276 @@
-# Screen Recorder C++
+# VSCapture
 
-A high-performance, cross-platform screen recording library with circular buffer support and REST API control.
+VSCapture is a small C++ screen recorder that continuously records into a rolling buffer. You can leave it running, then save the most recent buffered recording with `Ctrl+C` or through a local HTTP API.
 
-## Features
+It currently supports:
 
-- **Cross-Platform**: Works on Windows (DirectX) and Linux (X11)
-- **Hardware Acceleration**: Supports hardware-accelerated video encoding
-- **Circular Buffer**: Continuously records with configurable buffer duration
-- **REST API**: Control recording via HTTP endpoints
-- **Real-time Statistics**: Monitor frames captured, encoded, dropped, and FPS
-- **Multi-Monitor Support**: Choose which monitor to record
-- **Graceful Shutdown**: Handles Ctrl+C to save recordings safely
+- Linux/X11 capture
+- Windows/Desktop Duplication capture
+- H.264 video through FFmpeg
+- Audio capture through RtAudio/PulseAudio on Linux
+- Rolling segment buffer
+- Local API endpoints for health, status, and save
+- Per-user deploy scripts for Linux `systemd` and Windows Task Scheduler
 
-## Requirements
+## Repository Layout
 
-### Build Dependencies
-- C++20 compatible compiler (GCC 10+, Clang 11+, MSVC 2019+)
-- CMake 3.15+
-- FFmpeg (libavcodec, libavformat, libavutil, libswscale)
-- Boost.Asio
-- spdlog
+```text
+src/              application, recorder core, API server, platform capture
+deploy/linux/     Linux deploy and undeploy scripts
+deploy/win/       Windows deploy and undeploy scripts
+third_party/      vendored/fetched dependency configuration and sources
+build.sh          optional dependency build script for Linux
+settings-example.toml
+```
 
-### Platform-Specific
-- **Windows**: DirectX 11
-- **Linux**: X11 with MIT-SHM extension (optional, for better performance)
+## Linux Dependencies
 
-## Building
+You can either install dependencies from your distro or use `build.sh` to build FFmpeg/x264/zlib/X11 support from source.
 
-### Windows Setup (MSVC with Ninja)
+### Option 1: Use Apt Packages
 
-When building on Windows with MSVC and Ninja, you need to set up the compiler environment. You have two options:
+On Ubuntu/Debian-like systems:
 
-**Option 1: Open VS Code from the x64 Native Tools Command Prompt (Recommended)**
+```bash
+sudo apt update
+sudo apt install -y \
+  build-essential cmake ninja-build git curl tar pkg-config \
+  autoconf automake libtool nasm yasm python3 \
+  ffmpeg libavcodec-dev libavformat-dev libavutil-dev \
+  libswscale-dev libswresample-dev libavdevice-dev \
+  libx264-dev zlib1g-dev \
+  libx11-dev libxext-dev libxfixes-dev libxrandr-dev libxrender-dev \
+  libxau-dev libxdmcp-dev libxcb1-dev libxcb-shm0-dev xorg-dev \
+  libpulse-dev
+```
 
-1. Open "x64 Native Tools Command Prompt for VS 2022"
-2. Navigate to your project directory
-3. Run: `code .`
-4. Build normally in VS Code
+The project uses C++26 in CMake, so use a compiler new enough for your toolchain. If your distro compiler is too old, install a newer GCC or Clang and pass it to CMake with `CMAKE_CXX_COMPILER`.
 
-This automatically sets up all required environment variables.
+### Option 2: Use `build.sh`
 
-**Option 2: Configure CMake Presets with Environment Variables**
+`build.sh` builds and installs native Linux dependencies into `/usr/local`:
 
-If you prefer to open VS Code normally, add these environment variables to your `CMakePresets.json`:
+- x264
+- zlib
+- FFmpeg with the encoders/features this project uses
+- X11 libraries fetched from upstream X.Org/XCB release servers
+
+Run:
+
+```bash
+sudo ./build.sh
+```
+
+Useful options:
+
+```bash
+sudo ./build.sh --only-x11
+sudo ./build.sh --only-ffmpeg
+sudo ./build.sh --skip-x11
+sudo ./build.sh --keep-build --keep-downloads
+```
+
+The X11 tarballs are downloaded from:
+
+```text
+https://www.x.org/releases/individual
+https://xcb.freedesktop.org/dist
+```
+
+You can override those mirrors:
+
+```bash
+sudo XORG_RELEASES_URL=https://www.x.org/releases/individual \
+     XCB_RELEASES_URL=https://xcb.freedesktop.org/dist \
+     ./build.sh --only-x11
+```
+
+After using `build.sh`, configure CMake with FFmpeg rooted at `/usr/local`:
+
+```bash
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DFFMPEG_ROOT=/usr/local
+cmake --build build -j
+```
+
+## Build The Project
+
+From the repository root:
+
+```bash
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build -j
+```
+
+If FFmpeg is installed somewhere custom:
+
+```bash
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DFFMPEG_ROOT=/path/to/ffmpeg
+cmake --build build -j
+```
+
+The executable is:
+
+```text
+build/VSCapture
+```
+
+## Configure
+
+VSCapture loads `settings.toml` from the current working directory. Start from the example:
+
+```bash
+cp settings-example.toml build/settings.toml
+```
+
+Example:
+
+```toml
+[api]
+address = "127.0.0.1"
+port = 8084
+
+[recording]
+fps = 30
+bitrate = 4000000
+recording_length_seconds = 10
+segment_buffer_seconds = 2
+
+[audio]
+output_device_name = ""
+input_device_name  = ""
+
+[log]
+level = "info"
+max_log_size_bytes = 5242880
+max_files = 5
+```
+
+Important settings:
+
+- `recording.recording_length_seconds`: how much history is kept in the rolling buffer.
+- `recording.segment_buffer_seconds`: segment size used internally for rolling saves.
+- `recording.fps`: capture frame rate.
+- `recording.bitrate`: target H.264 bitrate.
+- `api.address` / `api.port`: local HTTP API bind address.
+- `audio.output_device_name` / `audio.input_device_name`: leave empty to use defaults.
+
+## Run
+
+Run from the directory that contains `settings.toml`:
+
+```bash
+cd build
+./VSCapture
+```
+
+On `Ctrl+C` or `SIGTERM`, VSCapture saves the current rolling buffer to:
+
+```text
+recording.mp4
+```
+
+## HTTP API
+
+Assuming the default example port `8084`:
+
+```bash
+curl http://127.0.0.1:8084/health
+```
 
 ```json
-"environment": {
-    "PATH": "E:/Visual Studio 2022/Community/VC/Tools/MSVC/14.41.34120/bin/Hostx64/x64;C:/Program Files (x86)/Windows Kits/10/bin/10.0.22621.0/x64;$penv{PATH}",
-    "INCLUDE": "E:/Visual Studio 2022/Community/VC/Tools/MSVC/14.41.34120/include;C:/Program Files (x86)/Windows Kits/10/include/10.0.22621.0/ucrt;C:/Program Files (x86)/Windows Kits/10/include/10.0.22621.0/um;C:/Program Files (x86)/Windows Kits/10/include/10.0.22621.0/shared;C:/Program Files (x86)/Windows Kits/10/include/10.0.22621.0/winrt",
-    "LIB": "E:/Visual Studio 2022/Community/VC/Tools/MSVC/14.41.34120/lib/x64;C:/Program Files (x86)/Windows Kits/10/lib/10.0.22621.0/ucrt/x64;C:/Program Files (x86)/Windows Kits/10/lib/10.0.22621.0/um/x64"
-}
+{"status":"healthy"}
 ```
-
-Adjust the paths to match your Visual Studio and Windows SDK installation directories.
-
-#### dependencies
-
-1. download prebuilt ffmpeg from https://dufs.ko/installs/c%2B%2B/libs/ffmpeg-prebuilt 
-2. extract to known location 
-3. add to CMakePresets.txt cacheVariables using FFMPEG_ROOT=path/to/ffmpeg-prebuilt/
-
-### Build Steps
 
 ```bash
-# Create build directory
-mkdir build && cd build
-
-# Configure and build
-cmake ..
-cmake --build . --config Release
+curl http://127.0.0.1:8084/status
 ```
 
-### REST API
-
-The application exposes a REST API on port 8080:
-
-#### Get Statistics
-```bash
-GET http://localhost:8080/stats
-```
-
-Response:
 ```json
-{
-    "framesCaptured": 1500,
-    "framesEncoded": 1500,
-    "framesDropped": 0,
-    "averageFps": 30.0,
-    "isRecording": true
-}
+{"recording":true}
 ```
 
-#### Stop Recording and Save
+Save the current buffer:
+
 ```bash
-POST http://localhost:8080/stop
-Content-Type: application/json
-
-{
-    "outputPath": "recording.mp4"
-}
+curl -X POST http://127.0.0.1:8084/stop
 ```
 
-Response:
-```json
-{
-    "success": true,
-    "message": "Recording stopped and saved"
-}
-```
+The saved file is currently named `recording.mp4` in the process working directory.
 
-### Command Line
+## Linux Deploy
 
-Run the application:
+The Linux deploy scripts install VSCapture as a per-user `systemd` service. They should usually be run as the desktop user, not root. If you accidentally run them with `sudo`, they try to re-run as the original login user.
+
+Prepare a deploy folder:
+
 ```bash
-./ScreenRecorderCPP
+mkdir -p deploy/linux/runtime
+cp build/VSCapture deploy/linux/runtime/
+cp settings-example.toml deploy/linux/runtime/settings.toml
+cp deploy/linux/deploy.sh deploy/linux/undeploy.sh deploy/linux/runtime/
 ```
 
-- Press **Ctrl+C** to stop recording and save the buffer
-- The server listens on `http://localhost:8080`
-- Stats are printed every 2 seconds
+Edit `deploy/linux/runtime/settings.toml`, then install and start:
 
-## Configuration Options
+```bash
+cd deploy/linux/runtime
+./deploy.sh
+```
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `outputPath` | string | - | Path to save the video file |
-| `fps` | int | 30 | Frames per second |
-| `bitrate` | int | 4000000 | Video bitrate in bits/sec |
-| `bufferDuration` | double | 10.0 | Circular buffer size in seconds |
-| `monitorIndex` | int | 0 | Which monitor to capture (0 = primary) |
-| `preferHardwareEncoding` | bool | true | Use hardware encoding if available |
+Check status:
 
-### Key Components
+```bash
+systemctl --user status VSCapture.service
+journalctl --user -u VSCapture.service -f
+```
 
-- **IScreenRecorder**: Abstract interface for platform-independent API
-- **ScreenRecorderBase**: Shared implementation for common functionality
-- **Platform Implementations**: Windows (DirectX Desktop Duplication) and Linux (X11)
-- **VideoEncoder**: FFmpeg-based video encoding
-- **CircularFrameBuffer**: Thread-safe circular buffer for frame storage
-- **ApiServer**: Boost.Beast-based REST API server
+Remove:
+
+```bash
+cd deploy/linux/runtime
+./undeploy.sh
+```
+
+The service uses the deploy folder as `WorkingDirectory`, so keep `settings.toml` next to the executable.
+
+## Windows Build And Deploy
+
+Build with Visual Studio/MSVC or another CMake-compatible Windows toolchain. If using Ninja with MSVC, open the project from a Visual Studio Developer Command Prompt so the compiler environment is initialized.
+
+For deployment, place these files in one folder:
+
+```text
+VSCapture.exe
+settings.toml
+deploy.bat
+undeploy.bat
+deploy_task.ps1
+```
+
+Then run `deploy.bat`. It installs a Windows scheduled task named `VSCapture`, starts it at user logon, and runs it immediately.
+
+To remove it, run:
+
+```bat
+undeploy.bat
+```
+
+## Formatting
+
+Format source files with:
+
+```bash
+./format.sh
+```
+
+Or use the CMake format target if configured:
+
+```bash
+cmake --build build --target format
+```
+
+## Notes
+
+- Linux capture currently targets X11. Wayland sessions may not expose the same screen capture path.
+- Hardware H.264 encoders are attempted before CPU x264 when available in the FFmpeg build.
+- The project binds the API to `127.0.0.1` by default. Keep it local unless you intentionally want remote control.
