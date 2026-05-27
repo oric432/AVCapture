@@ -67,25 +67,6 @@ Core::RecordingConfig make_recording_config(const Settings &settings) {
   return cfg;
 }
 
-std::unique_ptr<Api::ApiServer>
-start_api_server_from_settings(asio::io_context &io_ctx,
-                               const Settings &settings,
-                               Core::MediaRecorder *recorder) {
-  const auto api_address =
-      settings.get<std::string>(Settings::Path::kAPI_ADDRESS);
-  const auto api_port = settings.get<unsigned short>(Settings::Path::kAPI_PORT);
-
-  auto api =
-      std::make_unique<Api::ApiServer>(io_ctx, api_address, api_port, recorder);
-  api->run();
-
-  Log::app()->info(
-      "Server ready. Send POST to http://{}:{}/stop to stop and save recording",
-      api_address, api_port);
-
-  return api;
-}
-
 } // namespace
 
 int main(int argc, char **argv) {
@@ -113,7 +94,25 @@ int main(int argc, char **argv) {
   asio::io_context io_ctx{1};
   asio::signal_set signals{io_ctx, SIGINT, SIGTERM};
 
-  auto api_server = start_api_server_from_settings(io_ctx, settings, &recorder);
+  const auto api_address =
+      settings.get<std::string>(Settings::Path::kAPI_ADDRESS);
+  const auto api_port = settings.get<unsigned short>(Settings::Path::kAPI_PORT);
+
+  auto api_server_res =
+      Api::ApiServer::create(io_ctx, api_address, api_port, &recorder);
+  if (!api_server_res) {
+    Log::crash_error(std::format("Failed starting API server: {}",
+                                 api_server_res.error()
+                                     .with_context("Failed creating API server")
+                                     .what()));
+  }
+
+  auto api_server = std::move(api_server_res.value());
+  api_server.run();
+
+  Log::app()->info(
+      "Server ready. Send POST to http://{}:{}/stop to stop and save recording",
+      api_address, api_port);
 
   if (auto res = recorder.start(); !res) {
     Log::crash_error(

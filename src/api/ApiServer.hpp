@@ -2,14 +2,26 @@
 
 #include "core/MediaRecorder.hpp"
 #include "types.hpp"
+#include "utils/error.hpp"
 
+#include <string>
 
 namespace VSCapture::Api {
 
 class ApiServer {
 public:
-  ApiServer(asio::io_context &ioc, const std::string &address,
-            unsigned short port, Core::MediaRecorder *recorder);
+  static Error::Result<ApiServer> create(asio::io_context &ioc,
+                                         const std::string &address,
+                                         unsigned short port,
+                                         Core::MediaRecorder *recorder);
+
+  ApiServer(asio::io_context &ioc, Core::MediaRecorder *recorder);
+  ApiServer(ApiServer &&) noexcept = default;
+  ApiServer &operator=(ApiServer &&) noexcept = default;
+
+  ApiServer(const ApiServer &) = delete;
+  ApiServer &operator=(const ApiServer &) = delete;
+
   void run();
 
 private:

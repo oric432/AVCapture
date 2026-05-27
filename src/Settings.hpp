@@ -6,7 +6,6 @@
 
 #include "utils/assert.hpp"
 #include "utils/error.hpp"
-#include <optional>
 #include <sstream>
 #include <string>
 #include <string_view>

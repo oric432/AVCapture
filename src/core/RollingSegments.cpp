@@ -85,7 +85,6 @@ RollingSegment::export_last_segments(size_t segments,
 
   const uint64_t cur_seq = seq_.load(std::memory_order::relaxed);
   const uint64_t start_seq = (cur_seq >= segments) ? (cur_seq - segments) : 0;
-  Log::media_recorder()->info("cur: {}, start: {}", cur_seq, start_seq);
   for (uint64_t i = start_seq; i < cur_seq; ++i) {
     const auto idx = static_cast<size_t>(i % config_.ring_size_);
     list << "file '" << seg_path(idx).string() << "'\n";
