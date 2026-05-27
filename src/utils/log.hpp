@@ -13,7 +13,7 @@
 #include <string_view>
 #include <system_error>
 
-namespace VSCapture::Log {
+namespace AVCapture::Log {
 
 inline std::filesystem::path
 find_newest_log(const std::filesystem::path &log_dir) {
@@ -86,7 +86,7 @@ inline void archive_last_log(const std::filesystem::path &log_dir) {
 
 inline void init_logging(int max_log_size, int max_files) {
   const std::filesystem::path log_dir = Utils::get_exe_dir() / "logs";
-  const std::filesystem::path log_file = log_dir / "VSCapture.log";
+  const std::filesystem::path log_file = log_dir / "AVCapture.log";
 
   archive_last_log(log_dir);
 
@@ -98,14 +98,14 @@ inline void init_logging(int max_log_size, int max_files) {
     auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
 
     auto logger = std::make_shared<spdlog::logger>(
-        "VSCapture", spdlog::sinks_init_list{file_sink, console_sink});
+        "AVCapture", spdlog::sinks_init_list{file_sink, console_sink});
 
     spdlog::set_default_logger(logger);
     spdlog::set_pattern("[%Y:%m:%d %H:%M:%S.%e] [%t] [%^%l%$] [%n] %v");
     spdlog::flush_on(spdlog::level::info);
     spdlog::flush_every(std::chrono::seconds(3));
   } catch (const spdlog::spdlog_ex &err) {
-    auto logger = spdlog::stdout_color_mt("VSCapture");
+    auto logger = spdlog::stdout_color_mt("AVCapture");
     spdlog::set_default_logger(logger);
     spdlog::warn("File logging disabled: ({}). Using console only.",
                  err.what());
@@ -167,4 +167,4 @@ inline void crash_error(const std::string_view msg) {
   std::quick_exit(EXIT_FAILURE);
 }
 
-} // namespace VSCapture::Log
+} // namespace AVCapture::Log

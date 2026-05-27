@@ -5,8 +5,7 @@
 #include "core/MediaRecorder.hpp"
 #include <string_view>
 
-
-namespace VSCapture::Api {
+namespace AVCapture::Api {
 
 namespace Routes {
 constexpr std::string_view kSTOP = "/stop";
@@ -39,4 +38,4 @@ private:
 
   Core::MediaRecorder *recorder_;
 };
-} // namespace VSCapture::Api
+} // namespace AVCapture::Api

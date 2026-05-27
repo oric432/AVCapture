@@ -2,8 +2,8 @@
 
 #include <cstdlib>
 
-namespace VSCapture::Utils {
+namespace AVCapture::Utils {
 
 #define ASSERTM(expr, msg) assert(((void)(msg), expr))
 
-} // namespace VSCapture::Utils
+} // namespace AVCapture::Utils

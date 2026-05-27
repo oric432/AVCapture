@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**VSCapture** is a cross-platform screen recording application with:
+**AVCapture** is a cross-platform screen recording application with:
 - Hardware-accelerated H.264 video encoding via FFmpeg
 - Audio capture and mixing (system audio + microphone, encoded to AAC)
 - Circular/rolling segment buffer recorded as MPEG-TS files

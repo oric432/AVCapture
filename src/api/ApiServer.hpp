@@ -6,7 +6,7 @@
 
 #include <string>
 
-namespace VSCapture::Api {
+namespace AVCapture::Api {
 
 class ApiServer {
 public:
@@ -30,4 +30,4 @@ private:
   tcp::acceptor acceptor_;
   Core::MediaRecorder *recorder_;
 };
-} // namespace VSCapture::Api
+} // namespace AVCapture::Api

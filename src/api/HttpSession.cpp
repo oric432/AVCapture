@@ -1,6 +1,6 @@
 
 #include "HttpSession.hpp"
-using namespace VSCapture::Api;
+using namespace AVCapture::Api;
 
 HttpSession::HttpSession(tcp::socket socket, Core::MediaRecorder *recorder)
     : socket_(std::move(socket)), router_(std::make_shared<Router>(recorder)) {}

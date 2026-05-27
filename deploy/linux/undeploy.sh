@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-APP_NAME="VSCapture"
+APP_NAME="AVCapture"
 SERVICE_FILE="${HOME}/.config/systemd/user/${APP_NAME}.service"
 
 rerun_as_login_user() {

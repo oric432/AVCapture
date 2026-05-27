@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <string>
 
-namespace VSCapture::Core {
+namespace AVCapture::Core {
 
 /**
  * @brief Audio configuration
@@ -17,4 +17,4 @@ struct AudioConfig {
   std::string output_device_name_;
   std::string input_device_name_;
 };
-} // namespace VSCapture::Core
+} // namespace AVCapture::Core

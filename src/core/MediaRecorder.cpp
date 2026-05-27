@@ -5,9 +5,9 @@
 #include "audio/AudioConfig.hpp"
 #include "video/VideoConfig.hpp"
 
-using namespace VSCapture::Core;
-using namespace VSCapture::Error;
-using namespace VSCapture;
+using namespace AVCapture::Core;
+using namespace AVCapture::Error;
+using namespace AVCapture;
 
 MediaRecorder::MediaRecorder() = default;
 
@@ -58,7 +58,7 @@ VoidResult MediaRecorder::initialize(RecordingConfig &recorder_config) {
 
   Core::RollingSegment::Config segment_config;
   segment_config.dir_ =
-      std::filesystem::temp_directory_path() / "VSCapture" / "ring";
+      std::filesystem::temp_directory_path() / "AVCapture" / "ring";
   segment_config.segment_buffer_seconds_ =
       static_cast<int>(recorder_config.video.segment_buffer_seconds_);
   segment_config.ring_size_ =

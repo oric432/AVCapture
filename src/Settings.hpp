@@ -10,7 +10,7 @@
 #include <string>
 #include <string_view>
 
-namespace VSCapture {
+namespace AVCapture {
 
 class Settings {
 public:
@@ -90,4 +90,4 @@ private:
   toml::table table_;
 };
 
-} // namespace VSCapture
+} // namespace AVCapture

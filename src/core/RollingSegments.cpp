@@ -1,8 +1,8 @@
 #include "RollingSegments.hpp"
 #include "video/IScreenRecorder.hpp"
 
-using namespace VSCapture::Core;
-using namespace VSCapture;
+using namespace AVCapture::Core;
+using namespace AVCapture;
 
 RollingSegment::~RollingSegment() { stop(); }
 

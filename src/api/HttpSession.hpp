@@ -4,7 +4,7 @@
 #include "Router.hpp"
 #include "core/MediaRecorder.hpp"
 
-namespace VSCapture::Api {
+namespace AVCapture::Api {
 
 class HttpSession : public std::enable_shared_from_this<HttpSession> {
 public:
@@ -21,4 +21,4 @@ private:
   http::request<http::string_body> req_;
   std::shared_ptr<Router> router_;
 };
-} // namespace VSCapture::Api
+} // namespace AVCapture::Api

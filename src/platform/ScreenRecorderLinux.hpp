@@ -9,7 +9,7 @@
 #include <sys/ipc.h>
 #include <sys/shm.h>
 
-namespace VSCapture::Platform {
+namespace AVCapture::Platform {
 
 /**
  * @brief Linux implementation using X11 for screen capture
@@ -37,6 +37,6 @@ private:
   int32_t screen_num_ = 0;
 };
 
-} // namespace VSCapture::Platform
+} // namespace AVCapture::Platform
 
 #endif // __linux__

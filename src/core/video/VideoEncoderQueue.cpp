@@ -1,9 +1,9 @@
 
 #include "VideoEncoderQueue.hpp"
 
-using namespace VSCapture::Encoding;
-using namespace VSCapture::Error;
-using namespace VSCapture;
+using namespace AVCapture::Encoding;
+using namespace AVCapture::Error;
+using namespace AVCapture;
 VideoEncoderQueue::VideoEncoderQueue()
     : frame_queue_(
           std::make_unique<

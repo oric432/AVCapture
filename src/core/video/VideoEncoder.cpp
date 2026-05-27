@@ -2,9 +2,9 @@
 #include "VideoEncoder.hpp"
 #include "VideoConfig.hpp"
 
-using namespace VSCapture::Encoding;
-using namespace VSCapture::Error;
-using namespace VSCapture;
+using namespace AVCapture::Encoding;
+using namespace AVCapture::Error;
+using namespace AVCapture;
 
 VideoEncoder::VideoEncoder(VideoEncoder &&other) noexcept {
   *this = std::move(other);

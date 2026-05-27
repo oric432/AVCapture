@@ -1,8 +1,8 @@
 #include "ApiServer.hpp"
 #include "HttpSession.hpp"
 
-using namespace VSCapture::Api;
-using namespace VSCapture::Error;
+using namespace AVCapture::Api;
+using namespace AVCapture::Error;
 
 ApiServer::ApiServer(asio::io_context &ioc, Core::MediaRecorder *recorder)
     : acceptor_(ioc), recorder_(recorder) {}

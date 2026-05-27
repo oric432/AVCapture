@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-APP_NAME="VSCapture"
+APP_NAME="AVCapture"
 SRC_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 EXE="${SRC_DIR}/${APP_NAME}"
 SERVICE_DIR="${HOME}/.config/systemd/user"

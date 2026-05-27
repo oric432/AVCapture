@@ -1,13 +1,13 @@
-# VSCapture
+# AVCapture
 
-VSCapture is a small C++ screen recorder that continuously records into a rolling buffer. You can leave it running, then save the most recent buffered recording with `Ctrl+C` or through a local HTTP API.
+AVCapture is a small C++ audio/video capture app. It records the screen together with microphone input and system audio into a rolling buffer, then lets you save the most recent buffered recording with `Ctrl+C` or through a local HTTP API.
 
 It currently supports:
 
-- Linux/X11 capture
-- Windows/Desktop Duplication capture
+- Linux/X11 screen capture
+- Windows/Desktop Duplication screen capture
 - H.264 video through FFmpeg
-- Audio capture through RtAudio/PulseAudio on Linux
+- Microphone and system audio capture through RtAudio/PulseAudio on Linux
 - Rolling segment buffer
 - Local API endpoints for health, status, and save
 - Per-user deploy scripts for Linux `systemd` and Windows Task Scheduler
@@ -111,12 +111,12 @@ cmake --build build -j
 The executable is:
 
 ```text
-build/VSCapture
+build/AVCapture
 ```
 
 ## Configure
 
-VSCapture loads `settings.toml` from the current working directory. Start from the example:
+AVCapture loads `settings.toml` from the current working directory. Start from the example:
 
 ```bash
 cp settings-example.toml build/settings.toml
@@ -152,7 +152,8 @@ Important settings:
 - `recording.fps`: capture frame rate.
 - `recording.bitrate`: target H.264 bitrate.
 - `api.address` / `api.port`: local HTTP API bind address.
-- `audio.output_device_name` / `audio.input_device_name`: leave empty to use defaults.
+- `audio.output_device_name`: system/output audio device. Leave empty to use the default output capture device.
+- `audio.input_device_name`: microphone/input audio device. Leave empty to use the default input device.
 
 ## Run
 
@@ -160,10 +161,10 @@ Run from the directory that contains `settings.toml`:
 
 ```bash
 cd build
-./VSCapture
+./AVCapture
 ```
 
-On `Ctrl+C` or `SIGTERM`, VSCapture saves the current rolling buffer to:
+On `Ctrl+C` or `SIGTERM`, AVCapture saves the current rolling buffer to:
 
 ```text
 recording.mp4
@@ -199,13 +200,13 @@ The saved file is currently named `recording.mp4` in the process working directo
 
 ## Linux Deploy
 
-The Linux deploy scripts install VSCapture as a per-user `systemd` service. They should usually be run as the desktop user, not root. If you accidentally run them with `sudo`, they try to re-run as the original login user.
+The Linux deploy scripts install AVCapture as a per-user `systemd` service. They should usually be run as the desktop user, not root. If you accidentally run them with `sudo`, they try to re-run as the original login user.
 
 Prepare a deploy folder:
 
 ```bash
 mkdir -p deploy/linux/runtime
-cp build/VSCapture deploy/linux/runtime/
+cp build/AVCapture deploy/linux/runtime/
 cp settings-example.toml deploy/linux/runtime/settings.toml
 cp deploy/linux/deploy.sh deploy/linux/undeploy.sh deploy/linux/runtime/
 ```
@@ -220,8 +221,8 @@ cd deploy/linux/runtime
 Check status:
 
 ```bash
-systemctl --user status VSCapture.service
-journalctl --user -u VSCapture.service -f
+systemctl --user status AVCapture.service
+journalctl --user -u AVCapture.service -f
 ```
 
 Remove:
@@ -240,14 +241,14 @@ Build with Visual Studio/MSVC or another CMake-compatible Windows toolchain. If 
 For deployment, place these files in one folder:
 
 ```text
-VSCapture.exe
+AVCapture.exe
 settings.toml
 deploy.bat
 undeploy.bat
 deploy_task.ps1
 ```
 
-Then run `deploy.bat`. It installs a Windows scheduled task named `VSCapture`, starts it at user logon, and runs it immediately.
+Then run `deploy.bat`. It installs a Windows scheduled task named `AVCapture`, starts it at user logon, and runs it immediately.
 
 To remove it, run:
 
@@ -271,6 +272,6 @@ cmake --build build --target format
 
 ## Notes
 
-- Linux capture currently targets X11. Wayland sessions may not expose the same screen capture path.
+- Linux screen capture currently targets X11. Wayland sessions may not expose the same screen capture path.
 - Hardware H.264 encoders are attempted before CPU x264 when available in the FFmpeg build.
 - The project binds the API to `127.0.0.1` by default. Keep it local unless you intentionally want remote control.

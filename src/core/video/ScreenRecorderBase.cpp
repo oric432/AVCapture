@@ -2,9 +2,9 @@
 #include "ScreenRecorderBase.hpp"
 #include "VideoConfig.hpp"
 
-using namespace VSCapture::Platform;
-using namespace VSCapture::Error;
-using namespace VSCapture;
+using namespace AVCapture::Platform;
+using namespace AVCapture::Error;
+using namespace AVCapture;
 VoidResult ScreenRecorderBase::initialize(const Core::VideoConfig &config) {
   if (is_initialized_.load(std::memory_order::relaxed)) {
     return std::unexpected(make_error().with_context(

@@ -5,7 +5,7 @@
 
 #include "utils/log.hpp"
 
-using namespace VSCapture;
+using namespace AVCapture;
 
 #ifdef WIN32
 #include <consoleapi3.h>

@@ -18,7 +18,7 @@ extern "C" {
 #include <libavutil/rational.h>
 }
 
-namespace VSCapture::Core {
+namespace AVCapture::Core {
 
 class MediaRecorder {
 public:
@@ -39,4 +39,4 @@ private:
 
   Core::RecordingConfig recorder_config_;
 };
-} // namespace VSCapture::Core
+} // namespace AVCapture::Core

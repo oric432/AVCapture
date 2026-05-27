@@ -1,6 +1,6 @@
 #pragma once
 
-namespace VSCapture::Core {
+namespace AVCapture::Core {
 
 /**
  * @brief Configuration for video encoding
@@ -24,4 +24,4 @@ struct VideoConfig {
   RotationType rotation_ =
       RotationType::kUnspecified; // 0=normal, 1=90deg, 2=180deg, 3=270deg
 };
-} // namespace VSCapture::Core
+} // namespace AVCapture::Core

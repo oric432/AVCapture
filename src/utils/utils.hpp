@@ -11,7 +11,7 @@
 
 #endif
 
-namespace VSCapture::Utils {
+namespace AVCapture::Utils {
 
 inline std::filesystem::path get_exe_dir() {
 #if defined(_WIN32)
@@ -40,4 +40,4 @@ inline std::filesystem::path get_exe_dir() {
 #endif
 }
 
-} // namespace VSCapture::Utils
+} // namespace AVCapture::Utils

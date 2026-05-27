@@ -12,7 +12,7 @@ namespace asio = boost::asio;
 namespace json = boost::json;
 using tcp = asio::ip::tcp;
 
-namespace VSCapture {
+namespace AVCapture {
 
 /**
  * @brief Raw audio frame (PCM Data)
@@ -71,4 +71,4 @@ struct EncodedVideoFrame {
   int flags_;
 };
 
-} // namespace VSCapture
+} // namespace AVCapture

@@ -3,7 +3,7 @@
 #include <core/audio/AudioConfig.hpp>
 #include <core/video/VideoConfig.hpp>
 
-namespace VSCapture::Core {
+namespace AVCapture::Core {
 
 /**
  * @brief Configuration for screen recording
@@ -13,4 +13,4 @@ struct RecordingConfig {
   AudioConfig audio;
 };
 
-} // namespace VSCapture::Core
+} // namespace AVCapture::Core

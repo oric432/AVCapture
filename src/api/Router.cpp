@@ -1,7 +1,7 @@
 
 #include "Router.hpp"
 
-using namespace VSCapture::Api;
+using namespace AVCapture::Api;
 
 namespace {
 constexpr std::string_view kSuccess = "success";

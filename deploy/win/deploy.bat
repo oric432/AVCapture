@@ -1,13 +1,13 @@
 @echo off
 setlocal
-set "TASK=VSCapture"
+set "TASK=AVCapture"
 set "SRC=%~dp0"
-set "EXE=%SRC%VSCapture.exe"
+set "EXE=%SRC%AVCapture.exe"
 set "XML=%TEMP%"
 set "USERID=%USERDOMAIN%\%USERNAME%"
 
 if not exist "%EXE%" (
-    echo VSCapture executable not found in the current folder. Please include vscapture.exe.
+    echo AVCapture executable not found in the current folder. Please include vscapture.exe.
     exit /b 1
 )
 

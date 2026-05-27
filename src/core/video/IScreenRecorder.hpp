@@ -10,7 +10,7 @@ extern "C" {
 #include <libavcodec/avcodec.h>
 }
 
-namespace VSCapture::Platform {
+namespace AVCapture::Platform {
 /**
  * @brief Abstract interface for platform-specific screen recording
  *
@@ -79,4 +79,4 @@ public:
  * @return Unique pointer to platform-specific IScreenRecorder implementation
  */
 std::unique_ptr<IScreenRecorder> create_screen_recorder();
-} // namespace VSCapture::Platform
+} // namespace AVCapture::Platform

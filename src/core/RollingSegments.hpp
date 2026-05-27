@@ -14,7 +14,7 @@ extern "C" {
 #include <libavutil/mathematics.h>
 }
 
-namespace VSCapture::Core {
+namespace AVCapture::Core {
 
 class RollingSegment {
 public:
@@ -63,4 +63,4 @@ private:
   std::atomic<uint64_t> seq_{0};
 };
 
-} // namespace VSCapture::Core
+} // namespace AVCapture::Core

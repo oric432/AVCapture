@@ -1,5 +1,5 @@
 param(
-    [string]$TaskName = "VSCapture",
+    [string]$TaskName = "AVCapture",
     [string]$ExePath,
     [string]$UserId
 )

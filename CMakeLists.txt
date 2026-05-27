@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.21)
-project(VSCapture VERSION 0.1.0 LANGUAGES C CXX)
+project(AVCapture VERSION 0.1.0 LANGUAGES C CXX)
 cmake_policy(SET CMP0069 NEW)
 cmake_policy(SET CMP0135 NEW)
 
@@ -89,7 +89,7 @@ else()
     message(FATAL_ERROR "Unsupported platform")
 endif()
 
-add_executable(VSCapture
+add_executable(AVCapture
     ${COMMON_SOURCES}
     ${PLATFORM_SOURCES}
 )
@@ -102,14 +102,14 @@ include(cmake/Sanitizers.cmake)
 myproject_assure_out_of_source_builds()
 
 # Define NDEBUG for debug (for asserts)
-target_compile_definitions(VSCapture PRIVATE $<$<CONFIG:Release>:NDEBUG>)
+target_compile_definitions(AVCapture PRIVATE $<$<CONFIG:Release>:NDEBUG>)
 
 # Define pch
-target_precompile_headers(VSCapture PRIVATE src/pch.h)
+target_precompile_headers(AVCapture PRIVATE src/pch.h)
 
 # Warnings
 myproject_set_project_warnings(
-    VSCapture
+    AVCapture
     OFF
     ""
     ""
@@ -118,14 +118,14 @@ myproject_set_project_warnings(
 )
 
 # Include paths
-target_include_directories(VSCapture
+target_include_directories(AVCapture
     SYSTEM PRIVATE
     ${FFMPEG_INCLUDE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
 # Link
-target_link_libraries(VSCapture
+target_link_libraries(AVCapture
     PRIVATE
     rtaudio
     tomlplusplus::tomlplusplus
@@ -139,7 +139,7 @@ target_link_libraries(VSCapture
 
 # Platform graphics libs
 if(WIN32)
-    target_link_libraries(VSCapture PRIVATE
+    target_link_libraries(AVCapture PRIVATE
         d3d11
         dxgi
         FFmpeg::FFmpeg
@@ -148,7 +148,7 @@ elseif(UNIX AND NOT APPLE)
     find_package(X11 REQUIRED COMPONENTS X11 Xext Xfixes)
 
     # X11 libs -> FFmpeg libs -> x264 -> zlib -> system libs (order matters)
-    target_link_libraries(VSCapture PRIVATE
+    target_link_libraries(AVCapture PRIVATE
         X11::X11
         X11::Xext
         X11::Xfixes
@@ -168,22 +168,22 @@ endif()
 if(WIN32 AND FFMPEG_ROOT)
     # Check if bin directory exists (shared build)
     if(EXISTS "${FFMPEG_ROOT}/bin")
-        add_custom_command(TARGET VSCapture POST_BUILD
+        add_custom_command(TARGET AVCapture POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy_directory
             "${FFMPEG_ROOT}/bin"
-            $<TARGET_FILE_DIR:VSCapture>
+            $<TARGET_FILE_DIR:AVCapture>
             COMMENT "Copying FFmpeg DLLs to output directory"
         )
     endif()
 endif()
 
 if(MSVC)
-    target_compile_options(VSCapture PRIVATE "/W4" "/WX")
-    target_compile_definitions(VSCapture PRIVATE "_CRT_SECURE_NO_WARNINGS")
+    target_compile_options(AVCapture PRIVATE "/W4" "/WX")
+    target_compile_definitions(AVCapture PRIVATE "_CRT_SECURE_NO_WARNINGS")
 else()
     # Enable Asan and Ubsan sanitizers for debug builds.
     if(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
-        myproject_enable_sanitizers(VSCapture
+        myproject_enable_sanitizers(AVCapture
             ON
             OFF
             ON
@@ -191,7 +191,7 @@ else()
             OFF)
     endif()
 
-    target_compile_options(VSCapture PRIVATE -Wall -Wextra -pedantic)
+    target_compile_options(AVCapture PRIVATE -Wall -Wextra -pedantic)
 endif()
 
-install(TARGETS VSCapture RUNTIME DESTINATION bin)
+install(TARGETS AVCapture RUNTIME DESTINATION bin)
