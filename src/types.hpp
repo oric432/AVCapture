@@ -15,40 +15,26 @@ using tcp = asio::ip::tcp;
 namespace VSCapture {
 
 /**
- * @brief VS Types
- */
-
-enum class VsType: uint8_t {
-    kVS,
-    kSoft,
-};
-
-enum class RoleType: uint8_t {
-    kAudio,
-    kVideo,
-    kNone
-};
-
-/**
  * @brief Raw audio frame (PCM Data)
  */
 
 struct RawAudioFrame {
-    static constexpr size_t kMaxSamples = 1024;
-    std::array<int16_t, kMaxSamples> data_{};
-    size_t actual_size_;
-    int64_t pts_{};
+  static constexpr size_t kMaxSamples = 1024;
+  std::array<int16_t, kMaxSamples> data_{};
+  size_t actual_size_;
+  int64_t pts_{};
 
-    explicit RawAudioFrame(const int16_t* source, size_t count, int64_t pts)
-        : actual_size_(count)
-        , pts_(pts) {
-        assert(count <= kMaxSamples && "Sample count exceed buffer size");
-        std::memcpy(data_.data(), source, count * sizeof(int16_t));
-    }
+  explicit RawAudioFrame(const int16_t *source, size_t count, int64_t pts)
+      : actual_size_(count), pts_(pts) {
+    assert(count <= kMaxSamples && "Sample count exceed buffer size");
+    std::memcpy(data_.data(), source, count * sizeof(int16_t));
+  }
 
-    boost::span<const int16_t> samples() const { return {data_.data(), actual_size_}; }
+  boost::span<const int16_t> samples() const {
+    return {data_.data(), actual_size_};
+  }
 
-    boost::span<int16_t> samples() { return {data_.data(), actual_size_}; }
+  boost::span<int16_t> samples() { return {data_.data(), actual_size_}; }
 };
 
 /**
@@ -56,35 +42,33 @@ struct RawAudioFrame {
  */
 
 struct EncodedAudioFrame {
-    std::vector<uint8_t> data_;
-    int64_t pts_;
-    int64_t dts_;
-    bool is_key_frame_ = true;
+  std::vector<uint8_t> data_;
+  int64_t pts_;
+  int64_t dts_;
+  bool is_key_frame_ = true;
 };
 
 /**
  * @brief Raw video frame to be encoded
  */
 struct RawVideoFrame {
-    std::vector<uint8_t> data_;
-    int stride_{};
-    int64_t pts_{};
-    int width_{};
-    int height_{};
+  std::vector<uint8_t> data_;
+  int stride_{};
+  int64_t pts_{};
+  int width_{};
+  int height_{};
 
-    explicit RawVideoFrame(size_t size)
-        : data_(size) {}
+  explicit RawVideoFrame(size_t size) : data_(size) {}
 };
-
 
 /**
  * @brief Structure to hold a single encoded ffmpeg frame
  */
 struct EncodedVideoFrame {
-    std::vector<uint8_t> data_;
-    int64_t pts_;
-    int64_t dts_;
-    int flags_;
+  std::vector<uint8_t> data_;
+  int64_t pts_;
+  int64_t dts_;
+  int flags_;
 };
 
 } // namespace VSCapture

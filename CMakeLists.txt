@@ -37,7 +37,6 @@ myproject_assure_out_of_source_builds()
 # Third-party libs you already vendor
 include(third_party/spdlog.cmake)
 include(third_party/boost.cmake)
-include(third_party/libnfs.cmake)
 include(third_party/tomlplusplus.cmake)
 include(third_party/rtaudio.cmake)
 
@@ -74,19 +73,6 @@ set(COMMON_SOURCES
     src/core/audio/AudioCapturer.cpp
     src/core/audio/AudioEncoder.cpp
     src/core/audio/AudioMixer.cpp
-
-    # storage
-    src/core/storage/NfsClient.cpp
-    src/core/storage/AvioNfsWriter.cpp
-
-    # export
-    src/core/export/VSLogs.cpp
-    src/core/export/ArtifactExporter.cpp
-
-    # sync
-    src/core/sync/SyncMasterServer.cpp
-    src/core/sync/SyncWorkerClient.cpp
-
 )
 
 set(PLATFORM_SOURCES "")
@@ -135,7 +121,6 @@ myproject_set_project_warnings(
 target_include_directories(VSCapture
     SYSTEM PRIVATE
     ${FFMPEG_INCLUDE_DIR}
-    ${libnfs_SOURCE_DIR}/include
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
@@ -150,7 +135,6 @@ target_link_libraries(VSCapture
     Boost::system
     Boost::json
     Boost::uuid
-    nfs
 )
 
 # Platform graphics libs
