@@ -58,6 +58,7 @@ Core::RecordingConfig make_recording_config(const Settings &settings) {
       settings.get<int>(Settings::Path::kBUFFER_DURATION);
   cfg.video.segment_seconds_ =
       settings.get<int>(Settings::Path::kSEGMENT_SECONDS);
+  cfg.video.bitrate_ = settings.get<int>(Settings::Path::kBITRATE);
 
   cfg.audio.output_device_name_ =
       settings.get<std::string>(Settings::Path::kOUTPUT_DEVICE_NAME);
