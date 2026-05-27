@@ -32,6 +32,7 @@ public:
 
   Error::Result<std::string> save_recording(std::string_view output_file);
 
+private:
   std::unique_ptr<Platform::IScreenRecorder> screen_recorder_;
   Core::RollingSegment segmenter_;
   Core::AudioCapturer audio_capturer_;
