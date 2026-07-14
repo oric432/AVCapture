@@ -3,6 +3,7 @@
 
 #include "boost/beast/http/string_body_fwd.hpp"
 #include "core/MediaRecorder.hpp"
+#include <functional>
 #include <string_view>
 
 namespace AVCapture::Api {
@@ -11,11 +12,13 @@ namespace Routes {
 constexpr std::string_view kSTOP = "/stop";
 constexpr std::string_view kSTATUS = "/status";
 constexpr std::string_view kHEALTH = "/health";
+constexpr std::string_view kSHUTDOWN = "/shutdown";
 } // namespace Routes
 
 class Router {
 public:
-  explicit Router(Core::MediaRecorder *recorder);
+  explicit Router(Core::MediaRecorder *recorder,
+                  std::function<void()> on_shutdown = {});
   http::response<http::string_body>
   handle(const http::request<http::string_body> &req);
 
@@ -36,6 +39,10 @@ private:
   [[nodiscard]] http::response<http::string_body>
   handle_status(const http::request<http::string_body> &req) const;
 
+  http::response<http::string_body>
+  handle_shutdown(const http::request<http::string_body> &req);
+
   Core::MediaRecorder *recorder_;
+  std::function<void()> on_shutdown_;
 };
 } // namespace AVCapture::Api

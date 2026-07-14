@@ -94,13 +94,37 @@ int main(int argc, char **argv) {
 
   asio::io_context io_ctx{1};
   asio::signal_set signals{io_ctx, SIGINT, SIGTERM};
+  asio::steady_timer shutdown_timer{io_ctx};
+
+  auto save_and_stop_recorder = [&recorder]() {
+    if (!recorder.is_recording()) {
+      return;
+    }
+    Log::app()->info("Saving buffer...");
+    if (auto res = recorder.save_recording("recording.mp4"); res) {
+      Log::app()->info("Recording saved successfully to {}", res.value());
+    } else {
+      Log::app()->error("Failed saving recording: {}", res.error().what());
+    }
+    Log::app()->info("Stopping recording...");
+    recorder.stop();
+  };
+
+  auto on_shutdown_requested = [&]() {
+    save_and_stop_recorder();
+    // Defer stopping the io_context so the HTTP response for this request
+    // has a chance to flush before the event loop tears down.
+    shutdown_timer.expires_after(std::chrono::milliseconds(200));
+    shutdown_timer.async_wait(
+        [&io_ctx](const boost::system::error_code &) { io_ctx.stop(); });
+  };
 
   const auto api_address =
       settings.get<std::string>(Settings::Path::kAPI_ADDRESS);
   const auto api_port = settings.get<unsigned short>(Settings::Path::kAPI_PORT);
 
-  auto api_server_res =
-      Api::ApiServer::create(io_ctx, api_address, api_port, &recorder);
+  auto api_server_res = Api::ApiServer::create(
+      io_ctx, api_address, api_port, &recorder, on_shutdown_requested);
   if (!api_server_res) {
     Log::crash_error(std::format("Failed starting API server: {}",
                                  api_server_res.error()
@@ -122,8 +146,8 @@ int main(int argc, char **argv) {
 
   Log::app()->info("Recording started");
 
-  signals.async_wait([&io_ctx, &recorder](const boost::system::error_code &errc,
-                                          int signum) {
+  signals.async_wait([&io_ctx, &save_and_stop_recorder](
+                         const boost::system::error_code &errc, int signum) {
     if (errc) {
       return;
     }
@@ -131,17 +155,7 @@ int main(int argc, char **argv) {
     Log::app()->info("Received signal {} ({}). Shutting down gracefully...",
                      signum, signum == SIGINT ? "SIGINT" : "SIGTERM");
 
-    if (recorder.is_recording()) {
-      Log::app()->info("Saving buffer...");
-      if (auto res = recorder.save_recording("recording.mp4"); res) {
-        Log::app()->info("Recording saved successfully to {}", res.value());
-      } else {
-        Log::app()->error("Failed saving recording: {}", res.error().what());
-      }
-
-      Log::app()->info("Stopping recording...");
-      recorder.stop();
-    }
+    save_and_stop_recorder();
     io_ctx.stop();
   });
 

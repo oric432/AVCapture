@@ -11,7 +11,9 @@ constexpr std::string_view kRecording = "recording";
 constexpr std::string_view kStatus = "status";
 } // namespace
 
-Router::Router(Core::MediaRecorder *recorder) : recorder_(recorder) {}
+Router::Router(Core::MediaRecorder *recorder,
+              std::function<void()> on_shutdown)
+    : recorder_(recorder), on_shutdown_(std::move(on_shutdown)) {}
 
 http::response<http::string_body>
 Router::handle(const http::request<http::string_body> &req) {
@@ -25,6 +27,10 @@ Router::handle(const http::request<http::string_body> &req) {
 
   if (req.method() == http::verb::get && req.target() == Routes::kHEALTH) {
     return handle_health(req);
+  }
+
+  if (req.method() == http::verb::post && req.target() == Routes::kSHUTDOWN) {
+    return handle_shutdown(req);
   }
 
   return not_found_response(req);
@@ -57,6 +63,15 @@ http::response<http::string_body>
 Router::handle_health(const http::request<http::string_body> &req) {
   json::object response_json;
   response_json[kStatus] = "healthy";
+  return json_response(response_json, req.version());
+}
+http::response<http::string_body>
+Router::handle_shutdown(const http::request<http::string_body> &req) {
+  json::object response_json;
+  response_json[kSuccess] = true;
+  if (on_shutdown_) {
+    on_shutdown_();
+  }
   return json_response(response_json, req.version());
 }
 http::response<http::string_body> Router::json_response(const json::object &obj,

@@ -3,12 +3,14 @@
 
 #include "Router.hpp"
 #include "core/MediaRecorder.hpp"
+#include <functional>
 
 namespace AVCapture::Api {
 
 class HttpSession : public std::enable_shared_from_this<HttpSession> {
 public:
-  HttpSession(tcp::socket socket, Core::MediaRecorder *recorder);
+  HttpSession(tcp::socket socket, Core::MediaRecorder *recorder,
+              std::function<void()> on_shutdown = {});
   void run();
 
 private:

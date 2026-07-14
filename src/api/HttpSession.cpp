@@ -2,8 +2,10 @@
 #include "HttpSession.hpp"
 using namespace AVCapture::Api;
 
-HttpSession::HttpSession(tcp::socket socket, Core::MediaRecorder *recorder)
-    : socket_(std::move(socket)), router_(std::make_shared<Router>(recorder)) {}
+HttpSession::HttpSession(tcp::socket socket, Core::MediaRecorder *recorder,
+                         std::function<void()> on_shutdown)
+    : socket_(std::move(socket)),
+      router_(std::make_shared<Router>(recorder, std::move(on_shutdown))) {}
 
 void HttpSession::run() { do_read(); }
 
