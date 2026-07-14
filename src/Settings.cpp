@@ -1,6 +1,53 @@
 #include "Settings.hpp"
 
+#include <cctype>
+#include <charconv>
+
 namespace AVCapture {
+
+Error::Result<size_t> Settings::parse_byte_size(std::string_view size_str) {
+  auto fail = [&](std::string_view why) {
+    std::ostringstream oss;
+    oss << "Invalid byte size '" << size_str << "': " << why;
+    return std::unexpected(Error::make_error().with_context(oss.str()));
+  };
+
+  size_t digits = 0;
+  while (digits < size_str.size() &&
+         std::isdigit(static_cast<unsigned char>(size_str[digits])) != 0) {
+    ++digits;
+  }
+  if (digits == 0) {
+    return fail("missing numeric value");
+  }
+
+  uint64_t value = 0;
+  auto [ptr, ec] =
+      std::from_chars(size_str.data(), size_str.data() + digits, value);
+  if (ec != std::errc{}) {
+    return fail("bad numeric value");
+  }
+
+  std::string unit{size_str.substr(digits)};
+  for (char &c : unit) {
+    c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+  }
+
+  uint64_t multiplier = 0;
+  if (unit.empty() || unit == "b") {
+    multiplier = 1;
+  } else if (unit == "kb") {
+    multiplier = 1024ULL;
+  } else if (unit == "mb") {
+    multiplier = 1024ULL * 1024ULL;
+  } else if (unit == "gb") {
+    multiplier = 1024ULL * 1024ULL * 1024ULL;
+  } else {
+    return fail("unknown unit '" + unit + "'");
+  }
+
+  return static_cast<size_t>(value * multiplier);
+}
 
 void Settings::merge_into(toml::table &dst, const toml::table &src) {
   // Recursive merge:

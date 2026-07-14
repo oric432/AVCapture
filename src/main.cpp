@@ -43,12 +43,23 @@ void platform_init(int argc, char **argv) {
 }
 
 void init_logging_from_settings(const Settings &settings) {
-  const auto max_log_size =
-      settings.get<int>(Settings::Path::kMAX_LOG_SIZE_BYTES);
+  const auto max_log_size_str =
+      settings.get<std::string>(Settings::Path::kMAX_LOG_SIZE);
+  auto max_log_size_res = Settings::parse_byte_size(max_log_size_str);
+  if (!max_log_size_res) {
+    Log::crash_error(std::format("Invalid {}: {}", Settings::Path::kMAX_LOG_SIZE,
+                                 max_log_size_res.error().what()));
+  }
   const auto max_log_files = settings.get<int>(Settings::Path::kMAX_FILES);
 
-  Log::init_logging(max_log_size, max_log_files);
+  Log::init_logging(static_cast<int>(max_log_size_res.value()), max_log_files);
   Log::set_log_level(settings.get<std::string>(Settings::Path::kLOG_LEVEL));
+}
+
+std::string make_recording_filename() {
+  const auto now = std::chrono::floor<std::chrono::seconds>(
+      std::chrono::system_clock::now());
+  return std::format("{:%Y-%m-%d_%H-%M-%S}.mp4", now);
 }
 
 Core::RecordingConfig make_recording_config(const Settings &settings) {
@@ -96,16 +107,30 @@ int main(int argc, char **argv) {
   asio::signal_set signals{io_ctx, SIGINT, SIGTERM};
   asio::steady_timer shutdown_timer{io_ctx};
 
-  auto save_and_stop_recorder = [&recorder]() {
+  const auto output_directory =
+      settings.get<std::string>(Settings::Path::kOUTPUT_DIRECTORY);
+
+  auto save_and_stop_recorder = [&recorder, output_directory]() {
     if (!recorder.is_recording()) {
       return;
     }
     Log::app()->info("Saving buffer...");
-    if (auto res = recorder.save_recording("recording.mp4"); res) {
-      Log::app()->info("Recording saved successfully to {}", res.value());
+
+    std::error_code errc;
+    std::filesystem::create_directories(output_directory, errc);
+    if (errc) {
+      Log::app()->error("Failed creating output directory '{}': {}",
+                        output_directory, errc.message());
     } else {
-      Log::app()->error("Failed saving recording: {}", res.error().what());
+      const auto output_path = std::filesystem::path(output_directory) /
+                                make_recording_filename();
+      if (auto res = recorder.save_recording(output_path.string()); res) {
+        Log::app()->info("Recording saved successfully to {}", res.value());
+      } else {
+        Log::app()->error("Failed saving recording: {}", res.error().what());
+      }
     }
+
     Log::app()->info("Stopping recording...");
     recorder.stop();
   };

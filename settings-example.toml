@@ -7,6 +7,7 @@ fps = 30
 bitrate = 4000000
 recording_length_seconds = 10
 segment_buffer_seconds = 2
+output_directory = "recordings"
 
 [audio]
 output_device_name = ""
@@ -14,5 +15,5 @@ input_device_name  = ""
 
 [log]
 level = "info"
-max_log_size_bytes = 5242880
+max_log_size = "5mb"
 max_files = 5
