@@ -81,4 +81,20 @@ void ApiClient::request_shutdown(std::chrono::milliseconds timeout) const {
   [[maybe_unused]] auto body = perform_request("POST", "/shutdown", timeout);
 }
 
+bool ApiClient::save_recording(std::chrono::milliseconds timeout) const {
+  auto body = perform_request("POST", "/stop", timeout);
+  if (!body) {
+    return false;
+  }
+
+  boost::system::error_code ec;
+  auto parsed = json::parse(*body, ec);
+  if (ec || !parsed.is_object()) {
+    return false;
+  }
+
+  auto *success = parsed.as_object().if_contains("success");
+  return success != nullptr && success->is_bool() && success->as_bool();
+}
+
 } // namespace AVCapture::Tray

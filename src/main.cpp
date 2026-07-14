@@ -56,12 +56,6 @@ void init_logging_from_settings(const Settings &settings) {
   Log::set_log_level(settings.get<std::string>(Settings::Path::kLOG_LEVEL));
 }
 
-std::string make_recording_filename() {
-  const auto now = std::chrono::floor<std::chrono::seconds>(
-      std::chrono::system_clock::now());
-  return std::format("{:%Y-%m-%d_%H-%M-%S}.mp4", now);
-}
-
 Core::RecordingConfig make_recording_config(const Settings &settings) {
   Core::RecordingConfig cfg;
   cfg.video.fps_ = settings.get<int>(Settings::Path::kFPS);
@@ -75,6 +69,9 @@ Core::RecordingConfig make_recording_config(const Settings &settings) {
       settings.get<std::string>(Settings::Path::kOUTPUT_DEVICE_NAME);
   cfg.audio.input_device_name_ =
       settings.get<std::string>(Settings::Path::kINPUT_DEVICE_NAME);
+
+  cfg.output_directory =
+      settings.get<std::string>(Settings::Path::kOUTPUT_DIRECTORY);
 
   return cfg;
 }
@@ -107,30 +104,16 @@ int main(int argc, char **argv) {
   asio::signal_set signals{io_ctx, SIGINT, SIGTERM};
   asio::steady_timer shutdown_timer{io_ctx};
 
-  const auto output_directory =
-      settings.get<std::string>(Settings::Path::kOUTPUT_DIRECTORY);
-
-  auto save_and_stop_recorder = [&recorder, output_directory]() {
+  auto save_and_stop_recorder = [&recorder]() {
     if (!recorder.is_recording()) {
       return;
     }
     Log::app()->info("Saving buffer...");
-
-    std::error_code errc;
-    std::filesystem::create_directories(output_directory, errc);
-    if (errc) {
-      Log::app()->error("Failed creating output directory '{}': {}",
-                        output_directory, errc.message());
+    if (auto res = recorder.save_recording(); res) {
+      Log::app()->info("Recording saved successfully to {}", res.value());
     } else {
-      const auto output_path = std::filesystem::path(output_directory) /
-                                make_recording_filename();
-      if (auto res = recorder.save_recording(output_path.string()); res) {
-        Log::app()->info("Recording saved successfully to {}", res.value());
-      } else {
-        Log::app()->error("Failed saving recording: {}", res.error().what());
-      }
+      Log::app()->error("Failed saving recording: {}", res.error().what());
     }
-
     Log::app()->info("Stopping recording...");
     recorder.stop();
   };

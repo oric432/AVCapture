@@ -30,9 +30,13 @@ public:
   void stop();
   bool is_recording();
 
-  Error::Result<std::string> save_recording(std::string_view output_file);
+  // Saves the current buffer to a timestamped file inside the configured
+  // output directory. Does not stop the recorder.
+  Error::Result<std::string> save_recording();
 
 private:
+  Error::Result<std::string> save_recording_to(std::string_view output_file);
+
   std::unique_ptr<Platform::IScreenRecorder> screen_recorder_;
   Core::RollingSegment segmenter_;
   Core::AudioCapturer audio_capturer_;

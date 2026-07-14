@@ -28,6 +28,10 @@ public:
   void request_shutdown(
       std::chrono::milliseconds timeout = std::chrono::milliseconds(2000)) const;
 
+  // Saves the current buffer to disk. Recording continues uninterrupted.
+  [[nodiscard]] bool save_recording(
+      std::chrono::milliseconds timeout = std::chrono::milliseconds(2000)) const;
+
 private:
   [[nodiscard]] std::optional<std::string>
   perform_request(const char *method, const char *target,
