@@ -9,13 +9,15 @@ It currently supports:
 - H.264 video through FFmpeg
 - Microphone and system audio capture through RtAudio/PulseAudio on Linux
 - Rolling segment buffer
-- Local API endpoints for health, status, and save
+- Local API endpoints for health, status, save, and shutdown
+- System tray app (Qt6) for settings and service control
 - Per-user deploy scripts for Linux `systemd` and Windows Task Scheduler
 
 ## Repository Layout
 
 ```text
 src/              application, recorder core, API server, platform capture
+src/tray/         Qt6 system tray application
 deploy/linux/     Linux deploy and undeploy scripts
 deploy/win/       Windows deploy and undeploy scripts
 third_party/      vendored/fetched dependency configuration and sources
@@ -41,10 +43,13 @@ sudo apt install -y \
   libx264-dev zlib1g-dev \
   libx11-dev libxext-dev libxfixes-dev libxrandr-dev libxrender-dev \
   libxau-dev libxdmcp-dev libxcb1-dev libxcb-shm0-dev xorg-dev \
-  libpulse-dev
+  libpulse-dev \
+  qt6-base-dev qt6-base-dev-tools
 ```
 
 The project uses C++26 in CMake, so use a compiler new enough for your toolchain. If your distro compiler is too old, install a newer GCC or Clang and pass it to CMake with `CMAKE_CXX_COMPILER`.
+
+The tray application requires **Qt6**. On Ubuntu/Debian install `qt6-base-dev` (shown above). On Fedora/Arch the package names differ but the component is the same. If Qt6 is not found, only the main `AVCapture` binary will be built.
 
 ### Option 2: Use `build.sh`
 
@@ -108,10 +113,11 @@ cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DFFMPEG_ROOT=/path/to/ffmpeg
 cmake --build build -j
 ```
 
-The executable is:
+The executables are:
 
 ```text
-build/AVCapture
+build/AVCapture          # main recorder
+build/AVCaptureTray      # system tray app (requires Qt6)
 ```
 
 ## Configure
@@ -196,6 +202,12 @@ Save the current buffer:
 curl -X POST http://127.0.0.1:8084/stop
 ```
 
+Gracefully shut down the recorder (saves buffer, then exits):
+
+```bash
+curl -X POST http://127.0.0.1:8084/shutdown
+```
+
 The saved file is currently named `recording.mp4` in the process working directory.
 
 ## Linux Deploy
@@ -206,7 +218,7 @@ Prepare a deploy folder:
 
 ```bash
 mkdir -p deploy/linux/runtime
-cp build/AVCapture deploy/linux/runtime/
+cp build/AVCapture build/AVCaptureTray deploy/linux/runtime/
 cp settings-example.toml deploy/linux/runtime/settings.toml
 cp deploy/linux/deploy.sh deploy/linux/undeploy.sh deploy/linux/runtime/
 ```
@@ -232,7 +244,7 @@ cd deploy/linux/runtime
 ./undeploy.sh
 ```
 
-The service uses the deploy folder as `WorkingDirectory`, so keep `settings.toml` next to the executable.
+The service uses the deploy folder as `WorkingDirectory`, so keep `settings.toml` next to the executable. The deploy script also installs a tray app autostart entry via XDG if `AVCaptureTray` is present.
 
 ## Windows Build And Deploy
 
@@ -242,13 +254,14 @@ For deployment, place these files in one folder:
 
 ```text
 AVCapture.exe
+AVCaptureTray.exe
 settings.toml
 deploy.bat
 undeploy.bat
 deploy_task.ps1
 ```
 
-Then run `deploy.bat`. It installs a Windows scheduled task named `AVCapture`, starts it at user logon, and runs it immediately.
+Then run `deploy.bat`. It installs a Windows scheduled task named `AVCapture`, starts it at user logon, and runs it immediately. If `AVCaptureTray.exe` is present, it also creates a startup shortcut so the tray app launches on login.
 
 To remove it, run:
 
