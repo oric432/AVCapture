@@ -39,6 +39,7 @@ include(third_party/spdlog.cmake)
 include(third_party/boost.cmake)
 include(third_party/tomlplusplus.cmake)
 include(third_party/rtaudio.cmake)
+include(third_party/qt.cmake)
 
 # ---------------- FFmpeg ----------------
 # Tell CMake where to find custom modules
@@ -195,3 +196,45 @@ else()
 endif()
 
 install(TARGETS AVCapture RUNTIME DESTINATION bin)
+
+# --------------- Tray app ----------------
+add_executable(AVCaptureTray
+    src/tray/main.cpp
+    src/tray/TrayIcon.cpp
+    src/tray/SettingsDialog.cpp
+    src/tray/ServiceControl.cpp
+    src/tray/ApiClient.cpp
+)
+
+set_target_properties(AVCaptureTray PROPERTIES
+    AUTOMOC ON
+    WIN32_EXECUTABLE TRUE
+)
+
+target_include_directories(AVCaptureTray
+    PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+
+target_link_libraries(AVCaptureTray
+    PRIVATE
+    ${QT_LIBRARIES}
+    tomlplusplus::tomlplusplus
+    Boost::asio
+    Boost::beast
+    Boost::system
+    Boost::json
+)
+
+if(WIN32)
+    set_target_properties(AVCaptureTray PROPERTIES WIN32_EXECUTABLE TRUE)
+endif()
+
+if(MSVC)
+    target_compile_options(AVCaptureTray PRIVATE "/W4" "/WX")
+    target_compile_definitions(AVCaptureTray PRIVATE "_CRT_SECURE_NO_WARNINGS")
+else()
+    target_compile_options(AVCaptureTray PRIVATE -Wall -Wextra -pedantic)
+endif()
+
+install(TARGETS AVCaptureTray RUNTIME DESTINATION bin)

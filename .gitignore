@@ -9,3 +9,4 @@ third_party/zlib/
 .agents/
 .claude/
 skills-lock.json
+.claude-flow/

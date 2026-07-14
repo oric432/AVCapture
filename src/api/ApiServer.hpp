@@ -4,6 +4,7 @@
 #include "types.hpp"
 #include "utils/error.hpp"
 
+#include <functional>
 #include <string>
 
 namespace AVCapture::Api {
@@ -13,9 +14,11 @@ public:
   static Error::Result<ApiServer> create(asio::io_context &ioc,
                                          const std::string &address,
                                          unsigned short port,
-                                         Core::MediaRecorder *recorder);
+                                         Core::MediaRecorder *recorder,
+                                         std::function<void()> on_shutdown = {});
 
-  ApiServer(asio::io_context &ioc, Core::MediaRecorder *recorder);
+  ApiServer(asio::io_context &ioc, Core::MediaRecorder *recorder,
+            std::function<void()> on_shutdown = {});
   ApiServer(ApiServer &&) noexcept = default;
   ApiServer &operator=(ApiServer &&) noexcept = default;
 
@@ -29,5 +32,6 @@ private:
 
   tcp::acceptor acceptor_;
   Core::MediaRecorder *recorder_;
+  std::function<void()> on_shutdown_;
 };
 } // namespace AVCapture::Api

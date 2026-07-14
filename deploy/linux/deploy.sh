@@ -73,3 +73,31 @@ systemctl --user enable --now "${APP_NAME}.service"
 
 echo "Installed \"${APP_NAME}\" as a user systemd service."
 echo "Status: systemctl --user status ${APP_NAME}.service"
+
+# --------------- Tray app ----------------
+# The tray is a normal desktop GUI app, not a background service, so it
+# autostarts via the standard XDG mechanism rather than a systemd unit.
+TRAY_EXE="${SRC_DIR}/${APP_NAME}Tray"
+AUTOSTART_DIR="${HOME}/.config/autostart"
+AUTOSTART_FILE="${AUTOSTART_DIR}/${APP_NAME}Tray.desktop"
+
+if [ -f "${TRAY_EXE}" ]; then
+    chmod +x "${TRAY_EXE}"
+    mkdir -p "${AUTOSTART_DIR}"
+
+    cat > "${AUTOSTART_FILE}" <<EOF
+[Desktop Entry]
+Type=Application
+Name=${APP_NAME} Tray
+Exec=${TRAY_EXE}
+X-GNOME-Autostart-enabled=true
+EOF
+
+    pkill -TERM -x "${APP_NAME}Tray" >/dev/null 2>&1 || true
+    nohup "${TRAY_EXE}" >/dev/null 2>&1 &
+    disown
+
+    echo "Installed \"${APP_NAME} Tray\" autostart entry and launched it."
+else
+    echo "${APP_NAME}Tray executable not found in the current folder. Skipping tray autostart."
+fi
