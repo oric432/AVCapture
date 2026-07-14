@@ -58,6 +58,9 @@ TrayIcon::TrayIcon(QString settings_path, QObject *parent)
   stop_action_ = menu_->addAction("Stop Recording");
   connect(stop_action_, &QAction::triggered, this, &TrayIcon::on_stop_clicked);
 
+  save_action_ = menu_->addAction("Save Recording");
+  connect(save_action_, &QAction::triggered, this, &TrayIcon::on_save_clicked);
+
   menu_->addSeparator();
 
   settings_action_ = menu_->addAction("Edit Settings...");
@@ -82,6 +85,7 @@ TrayIcon::TrayIcon(QString settings_path, QObject *parent)
 void TrayIcon::apply_status(bool reachable, bool recording) {
   start_action_->setEnabled(!reachable);
   stop_action_->setEnabled(reachable);
+  save_action_->setEnabled(reachable && recording);
 
   if (!reachable) {
     setIcon(make_dot_icon(Qt::gray));
@@ -130,6 +134,12 @@ void TrayIcon::on_start_clicked() {
 void TrayIcon::on_stop_clicked() {
   api_client_.request_shutdown();
   QTimer::singleShot(500, this, [this] { poll_status(); });
+}
+
+void TrayIcon::on_save_clicked() {
+  if (!api_client_.save_recording()) {
+    QMessageBox::warning(nullptr, "AVCapture", "Failed to save recording.");
+  }
 }
 
 void TrayIcon::on_edit_settings_clicked() {

@@ -25,6 +25,7 @@ public:
         bitrate = 4000000
         recording_length_seconds = 10
         segment_buffer_seconds = 2
+        output_directory = "recordings"
 
         [audio]
         output_device_name = ""
@@ -32,7 +33,7 @@ public:
 
         [log]
         level = "info"
-        max_log_size_bytes = 5242880
+        max_log_size = "5mb"
         max_files = 5
 
         )toml";
@@ -49,6 +50,7 @@ public:
         "recording.recording_length_seconds";
     static constexpr auto kSEGMENT_BUFFER_SECONDS =
         "recording.segment_buffer_seconds";
+    static constexpr auto kOUTPUT_DIRECTORY = "recording.output_directory";
 
     // audio
     static constexpr auto kOUTPUT_DEVICE_NAME = "audio.output_device_name";
@@ -56,11 +58,15 @@ public:
 
     // log
     static constexpr auto kLOG_LEVEL = "log.level";
-    static constexpr auto kMAX_LOG_SIZE_BYTES = "log.max_log_size_bytes";
+    static constexpr auto kMAX_LOG_SIZE = "log.max_log_size";
     static constexpr auto kMAX_FILES = "log.max_files";
   };
 
   static Error::Result<Settings> load(std::string_view file_path);
+
+  // Parses sizes like "10mb", "512kb", "1gb", "100" (bytes, no suffix).
+  // Units are binary (1kb = 1024 bytes). Case-insensitive.
+  static Error::Result<size_t> parse_byte_size(std::string_view size_str);
 
   template <typename T> Error::Result<T> try_get(std::string_view path) const {
     const toml::node_view<const toml::node> node = table_.at_path(path);

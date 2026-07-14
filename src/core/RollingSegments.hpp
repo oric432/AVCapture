@@ -6,6 +6,7 @@
 #include <atomic>
 #include <cstdint>
 #include <filesystem>
+#include <mutex>
 #include <thread>
 
 extern "C" {
@@ -61,6 +62,11 @@ private:
   std::jthread th_;
 
   std::atomic<uint64_t> seq_{0};
+
+  // Guards segment files on disk against concurrent access between the tick
+  // thread (writing new segments) and export_last_segments (reading them,
+  // possibly called from a background save thread).
+  std::mutex segment_mutex_;
 };
 
 } // namespace AVCapture::Core

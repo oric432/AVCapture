@@ -43,8 +43,9 @@ Router::handle_stop(const http::request<http::string_body> &req) {
                           req.version());
   }
   json::object response_json;
-  if (auto res = recorder_->save_recording("recording.mp4"); !res) {
-    Log::api()->error("Failed saving buffer to file: {}", res.error().what());
+  if (auto res = recorder_->save_recording_async(); !res) {
+    Log::api()->error("Failed starting background save: {}",
+                      res.error().what());
     response_json[kSuccess] = false;
     response_json[kError] = res.error().what();
   } else {

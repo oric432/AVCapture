@@ -9,7 +9,7 @@ class QComboBox;
 
 namespace AVCapture::Tray {
 
-// Structured form for the 10 keys in settings.toml (api/recording/audio/log
+// Structured form for the keys in settings.toml (api/recording/audio/log
 // sections, matching settings-example.toml). Writing the file is all this
 // dialog does -- deciding whether a restart is needed lives in TrayIcon.
 class SettingsDialog : public QDialog {
@@ -35,10 +35,11 @@ private:
   QSpinBox *bitrate_{};
   QSpinBox *recording_length_seconds_{};
   QSpinBox *segment_buffer_seconds_{};
+  QLineEdit *output_directory_{};
   QLineEdit *output_device_name_{};
   QLineEdit *input_device_name_{};
   QComboBox *log_level_{};
-  QSpinBox *max_log_size_bytes_{};
+  QLineEdit *max_log_size_{};
   QSpinBox *max_files_{};
 };
 

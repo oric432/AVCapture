@@ -51,6 +51,9 @@ SettingsDialog::SettingsDialog(QString settings_path, QWidget *parent)
   segment_buffer_seconds_->setRange(1, 3600);
   form->addRow("Segment buffer (s)", segment_buffer_seconds_);
 
+  output_directory_ = new QLineEdit(this);
+  form->addRow("Recordings folder", output_directory_);
+
   output_device_name_ = new QLineEdit(this);
   form->addRow("Audio output device", output_device_name_);
 
@@ -63,9 +66,9 @@ SettingsDialog::SettingsDialog(QString settings_path, QWidget *parent)
   }
   form->addRow("Log level", log_level_);
 
-  max_log_size_bytes_ = new QSpinBox(this);
-  max_log_size_bytes_->setRange(1, 1'000'000'000);
-  form->addRow("Max log size (bytes)", max_log_size_bytes_);
+  max_log_size_ = new QLineEdit(this);
+  max_log_size_->setPlaceholderText("e.g. 5mb, 512kb, 1gb");
+  form->addRow("Max log size", max_log_size_);
 
   max_files_ = new QSpinBox(this);
   max_files_->setRange(1, 1000);
@@ -108,6 +111,8 @@ void SettingsDialog::load() {
       t.at_path("recording.recording_length_seconds").value_or(10));
   segment_buffer_seconds_->setValue(
       t.at_path("recording.segment_buffer_seconds").value_or(2));
+  output_directory_->setText(QString::fromStdString(
+      t.at_path("recording.output_directory").value_or(std::string{"recordings"})));
   output_device_name_->setText(QString::fromStdString(
       t.at_path("audio.output_device_name").value_or(std::string{})));
   input_device_name_->setText(QString::fromStdString(
@@ -119,8 +124,8 @@ void SettingsDialog::load() {
       idx >= 0) {
     log_level_->setCurrentIndex(idx);
   }
-  max_log_size_bytes_->setValue(
-      t.at_path("log.max_log_size_bytes").value_or(5242880));
+  max_log_size_->setText(QString::fromStdString(
+      t.at_path("log.max_log_size").value_or(std::string{"5mb"})));
   max_files_->setValue(t.at_path("log.max_files").value_or(5));
 }
 
@@ -136,6 +141,7 @@ void SettingsDialog::on_save_clicked() {
                        recording_length_seconds_->value());
   recording_tbl.insert("segment_buffer_seconds",
                        segment_buffer_seconds_->value());
+  recording_tbl.insert("output_directory", output_directory_->text().toStdString());
 
   toml::table audio_tbl;
   audio_tbl.insert("output_device_name", output_device_name_->text().toStdString());
@@ -143,7 +149,7 @@ void SettingsDialog::on_save_clicked() {
 
   toml::table log_tbl;
   log_tbl.insert("level", log_level_->currentText().toStdString());
-  log_tbl.insert("max_log_size_bytes", max_log_size_bytes_->value());
+  log_tbl.insert("max_log_size", max_log_size_->text().toStdString());
   log_tbl.insert("max_files", max_files_->value());
 
   toml::table root;

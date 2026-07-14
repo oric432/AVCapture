@@ -19,6 +19,7 @@ public:
 private slots:
   void on_start_clicked();
   void on_stop_clicked();
+  void on_save_clicked();
   void on_edit_settings_clicked();
   void on_settings_saved();
   void on_quit_clicked();
@@ -34,6 +35,7 @@ private:
   QMenu *menu_{};
   QAction *start_action_{};
   QAction *stop_action_{};
+  QAction *save_action_{};
   QAction *settings_action_{};
   QTimer *poll_timer_{};
 };

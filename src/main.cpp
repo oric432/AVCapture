@@ -43,11 +43,16 @@ void platform_init(int argc, char **argv) {
 }
 
 void init_logging_from_settings(const Settings &settings) {
-  const auto max_log_size =
-      settings.get<int>(Settings::Path::kMAX_LOG_SIZE_BYTES);
+  const auto max_log_size_str =
+      settings.get<std::string>(Settings::Path::kMAX_LOG_SIZE);
+  auto max_log_size_res = Settings::parse_byte_size(max_log_size_str);
+  if (!max_log_size_res) {
+    Log::crash_error(std::format("Invalid {}: {}", Settings::Path::kMAX_LOG_SIZE,
+                                 max_log_size_res.error().what()));
+  }
   const auto max_log_files = settings.get<int>(Settings::Path::kMAX_FILES);
 
-  Log::init_logging(max_log_size, max_log_files);
+  Log::init_logging(static_cast<int>(max_log_size_res.value()), max_log_files);
   Log::set_log_level(settings.get<std::string>(Settings::Path::kLOG_LEVEL));
 }
 
@@ -64,6 +69,9 @@ Core::RecordingConfig make_recording_config(const Settings &settings) {
       settings.get<std::string>(Settings::Path::kOUTPUT_DEVICE_NAME);
   cfg.audio.input_device_name_ =
       settings.get<std::string>(Settings::Path::kINPUT_DEVICE_NAME);
+
+  cfg.output_directory =
+      settings.get<std::string>(Settings::Path::kOUTPUT_DIRECTORY);
 
   return cfg;
 }
@@ -101,7 +109,7 @@ int main(int argc, char **argv) {
       return;
     }
     Log::app()->info("Saving buffer...");
-    if (auto res = recorder.save_recording("recording.mp4"); res) {
+    if (auto res = recorder.save_recording(); res) {
       Log::app()->info("Recording saved successfully to {}", res.value());
     } else {
       Log::app()->error("Failed saving recording: {}", res.error().what());

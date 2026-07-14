@@ -2,6 +2,7 @@
 
 #include <core/audio/AudioConfig.hpp>
 #include <core/video/VideoConfig.hpp>
+#include <string>
 
 namespace AVCapture::Core {
 
@@ -11,6 +12,7 @@ namespace AVCapture::Core {
 struct RecordingConfig {
   VideoConfig video;
   AudioConfig audio;
+  std::string output_directory;
 };
 
 } // namespace AVCapture::Core
