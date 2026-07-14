@@ -77,6 +77,8 @@ void RollingSegment::stop() noexcept {
 Error::VoidResult
 RollingSegment::export_last_segments(size_t segments,
                                      const std::filesystem::path &out_mp4) {
+  std::lock_guard lock(segment_mutex_);
+
   segments = std::min(segments, config_.ring_size_);
   // We use a list.txt since the concat list is very limited
   // and when using a txt file it is more supported by ffmpeg
@@ -117,9 +119,12 @@ Error::VoidResult RollingSegment::tick_save_one_segment() {
                                        config_.ring_size_);
   const auto path = seg_path(idx);
 
-  if (auto res = save_av_to_ts(path); !res) {
-    return std::unexpected(res.error().with_context(
-        "Failed saving current AV buffers to ts file"));
+  {
+    std::lock_guard lock(segment_mutex_);
+    if (auto res = save_av_to_ts(path); !res) {
+      return std::unexpected(res.error().with_context(
+          "Failed saving current AV buffers to ts file"));
+    }
   }
 
   screen_recorder_->clear_frames();

@@ -119,7 +119,7 @@ MediaRecorder::save_recording_to(std::string_view output_file) {
   return std::string{output_file};
 }
 
-Result<std::string> MediaRecorder::save_recording() {
+Result<std::filesystem::path> MediaRecorder::make_output_path() const {
   const auto &output_directory = recorder_config_.output_directory;
 
   std::error_code errc;
@@ -133,7 +133,36 @@ Result<std::string> MediaRecorder::save_recording() {
   const auto now = std::chrono::floor<std::chrono::seconds>(
       std::chrono::system_clock::now());
   const auto filename = std::format("{:%Y-%m-%d_%H-%M-%S}.mp4", now);
-  const auto output_path = std::filesystem::path(output_directory) / filename;
+  return std::filesystem::path(output_directory) / filename;
+}
 
-  return save_recording_to(output_path.string());
+Result<std::string> MediaRecorder::save_recording() {
+  auto path_res = make_output_path();
+  if (!path_res) {
+    return std::unexpected(path_res.error());
+  }
+
+  return save_recording_to(path_res.value().string());
+}
+
+Result<std::string> MediaRecorder::save_recording_async() {
+  auto path_res = make_output_path();
+  if (!path_res) {
+    return std::unexpected(path_res.error());
+  }
+  auto output_path = std::move(path_res.value());
+
+  // Assigning to a joinable jthread stops+joins whatever it held before
+  // starting the new one, so a prior in-flight save is never abandoned.
+  save_thread_ = std::jthread([this, output_path] {
+    if (auto res = save_recording_to(output_path.string()); !res) {
+      Log::media_recorder()->error("Background save to '{}' failed: {}",
+                                   output_path.string(), res.error().what());
+    } else {
+      Log::media_recorder()->info("Background save completed: {}",
+                                  res.value());
+    }
+  });
+
+  return output_path.string();
 }
