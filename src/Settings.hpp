@@ -19,6 +19,7 @@ public:
         [api]
         address = "127.0.0.1"
         port = 8084
+        api_key = ""
 
         [recording]
         fps = 30
@@ -42,6 +43,7 @@ public:
     // api
     static constexpr auto kAPI_ADDRESS = "api.address";
     static constexpr auto kAPI_PORT = "api.port";
+    static constexpr auto kAPI_KEY = "api.api_key";
 
     // recording
     static constexpr auto kFPS = "recording.fps";

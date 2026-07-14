@@ -3,9 +3,11 @@
 using namespace AVCapture::Api;
 
 HttpSession::HttpSession(tcp::socket socket, Core::MediaRecorder *recorder,
-                         std::function<void()> on_shutdown)
+                         std::function<void()> on_shutdown,
+                         std::string api_key)
     : socket_(std::move(socket)),
-      router_(std::make_shared<Router>(recorder, std::move(on_shutdown))) {}
+      router_(std::make_shared<Router>(recorder, std::move(on_shutdown),
+                                       std::move(api_key))) {}
 
 void HttpSession::run() { do_read(); }
 

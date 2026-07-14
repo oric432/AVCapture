@@ -91,8 +91,16 @@ Error::Result<Settings> Settings::load(std::string_view file_path) {
 }
 
 std::string Settings::dump() const {
+  toml::table redacted{table_};
+  if (auto *api_tbl = redacted.get("api"); api_tbl != nullptr &&
+                                          api_tbl->is_table() &&
+                                          api_tbl->as_table()->contains(
+                                              "api_key")) {
+    api_tbl->as_table()->insert_or_assign("api_key", "***redacted***");
+  }
+
   std::ostringstream oss;
-  oss << table_;
+  oss << redacted;
   return oss.str();
 }
 } // namespace AVCapture

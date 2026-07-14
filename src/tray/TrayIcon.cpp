@@ -17,17 +17,25 @@ namespace AVCapture::Tray {
 
 namespace {
 
-std::pair<std::string, unsigned short>
-read_api_endpoint(const QString &settings_path) {
+struct ApiEndpoint {
   std::string address = "127.0.0.1";
   unsigned short port = 8084;
+  std::string api_key;
+};
+
+ApiEndpoint read_api_endpoint(const QString &settings_path) {
+  ApiEndpoint endpoint;
 
   auto file_res = toml::parse_file(settings_path.toStdString());
   if (file_res) {
-    address = file_res.table().at_path("api.address").value_or(address);
-    port = file_res.table().at_path("api.port").value_or<int>(port);
+    endpoint.address =
+        file_res.table().at_path("api.address").value_or(endpoint.address);
+    endpoint.port =
+        file_res.table().at_path("api.port").value_or<int>(endpoint.port);
+    endpoint.api_key =
+        file_res.table().at_path("api.api_key").value_or(std::string{});
   }
-  return {address, port};
+  return endpoint;
 }
 
 QIcon make_dot_icon(const QColor &color) {
@@ -46,8 +54,9 @@ QIcon make_dot_icon(const QColor &color) {
 TrayIcon::TrayIcon(QString settings_path, QObject *parent)
     : QSystemTrayIcon(parent), settings_path_(std::move(settings_path)),
       api_client_([&] {
-        auto [host, port] = read_api_endpoint(settings_path_);
-        return ApiClient(std::move(host), port);
+        auto endpoint = read_api_endpoint(settings_path_);
+        return ApiClient(std::move(endpoint.address), endpoint.port,
+                         std::move(endpoint.api_key));
       }()) {
   menu_ = new QMenu();
 

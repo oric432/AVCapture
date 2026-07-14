@@ -15,7 +15,7 @@ struct ApiStatus {
 // QtNetwork, since the tray only fetches QtBase+Widgets.
 class ApiClient {
 public:
-  ApiClient(std::string host, unsigned short port);
+  ApiClient(std::string host, unsigned short port, std::string api_key = {});
 
   [[nodiscard]] bool is_healthy(
       std::chrono::milliseconds timeout = std::chrono::milliseconds(1000)) const;
@@ -39,6 +39,7 @@ private:
 
   std::string host_;
   unsigned short port_;
+  std::string api_key_;
 };
 
 } // namespace AVCapture::Tray

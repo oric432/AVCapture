@@ -130,9 +130,19 @@ int main(int argc, char **argv) {
   const auto api_address =
       settings.get<std::string>(Settings::Path::kAPI_ADDRESS);
   const auto api_port = settings.get<unsigned short>(Settings::Path::kAPI_PORT);
+  const auto api_key = settings.get<std::string>(Settings::Path::kAPI_KEY);
+
+  if (api_key.empty() && api_address != "127.0.0.1" && api_address != "::1") {
+    Log::app()->warn(
+        "api.api_key is empty and api.address ({}) is not loopback -- the "
+        "control API (stop/save/shutdown) is reachable without "
+        "authentication.",
+        api_address);
+  }
 
   auto api_server_res = Api::ApiServer::create(
-      io_ctx, api_address, api_port, &recorder, on_shutdown_requested);
+      io_ctx, api_address, api_port, &recorder, on_shutdown_requested,
+      api_key);
   if (!api_server_res) {
     Log::crash_error(std::format("Failed starting API server: {}",
                                  api_server_res.error()

@@ -15,8 +15,9 @@ using tcp = asio::ip::tcp;
 
 namespace AVCapture::Tray {
 
-ApiClient::ApiClient(std::string host, unsigned short port)
-    : host_(std::move(host)), port_(port) {}
+ApiClient::ApiClient(std::string host, unsigned short port,
+                     std::string api_key)
+    : host_(std::move(host)), port_(port), api_key_(std::move(api_key)) {}
 
 std::optional<std::string>
 ApiClient::perform_request(const char *method, const char *target,
@@ -35,6 +36,9 @@ ApiClient::perform_request(const char *method, const char *target,
         target, 11};
     req.set(http::field::host, host_);
     req.set(http::field::content_length, "0");
+    if (!api_key_.empty()) {
+      req.set("X-API-Key", api_key_);
+    }
 
     stream.expires_after(timeout);
     http::write(stream, req);

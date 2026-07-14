@@ -1,4 +1,5 @@
 #include "RollingSegments.hpp"
+#include "utils/subprocess.hpp"
 #include "video/IScreenRecorder.hpp"
 
 using namespace AVCapture::Core;
@@ -93,13 +94,15 @@ RollingSegment::export_last_segments(size_t segments,
   }
   list.close();
 
-  std::string cmd = std::format(
-      "ffmpeg -y -hide_banner -loglevel fatal -f concat -safe 0 -i \"{}\" "
-      "-c copy -bsf:v h264_mp4toannexb -bsf:a aac_adtstoasc -movflags "
-      "+faststart \"{}\"",
-      list_path.string(), out_mp4.string());
+  const std::vector<std::string> argv = {
+      "ffmpeg",   "-y",         "-hide_banner", "-loglevel",
+      "fatal",    "-f",         "concat",       "-safe",
+      "0",        "-i",         list_path.string(),
+      "-c",       "copy",       "-bsf:v",       "h264_mp4toannexb",
+      "-bsf:a",   "aac_adtstoasc", "-movflags", "+faststart",
+      out_mp4.string()};
 
-  if (std::system(cmd.c_str()) != 0) {
+  if (Utils::run_process(argv) != 0) {
     return std::unexpected(
         Error::make_error().with_context("ffmpeg command failed"));
   }

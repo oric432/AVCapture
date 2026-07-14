@@ -31,6 +31,7 @@ private:
 
   QLineEdit *api_address_{};
   QSpinBox *api_port_{};
+  QLineEdit *api_key_{};
   QSpinBox *fps_{};
   QSpinBox *bitrate_{};
   QSpinBox *recording_length_seconds_{};

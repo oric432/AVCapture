@@ -12,21 +12,50 @@ constexpr std::string_view kStatus = "status";
 } // namespace
 
 Router::Router(Core::MediaRecorder *recorder,
-              std::function<void()> on_shutdown)
-    : recorder_(recorder), on_shutdown_(std::move(on_shutdown)) {}
+              std::function<void()> on_shutdown, std::string api_key)
+    : recorder_(recorder), on_shutdown_(std::move(on_shutdown)),
+      api_key_(std::move(api_key)) {}
+
+bool Router::is_authorized(const http::request<http::string_body> &req) const {
+  if (api_key_.empty()) {
+    return true;
+  }
+
+  const auto it = req.find(kApiKeyHeader);
+  if (it == req.end()) {
+    return false;
+  }
+
+  // Constant-time comparison to avoid leaking the key via response timing.
+  const std::string_view given = it->value();
+  if (given.size() != api_key_.size()) {
+    return false;
+  }
+  unsigned char diff = 0;
+  for (size_t i = 0; i < given.size(); ++i) {
+    diff |= static_cast<unsigned char>(given[i]) ^
+            static_cast<unsigned char>(api_key_[i]);
+  }
+  return diff == 0;
+}
 
 http::response<http::string_body>
 Router::handle(const http::request<http::string_body> &req) {
+  if (req.method() == http::verb::get && req.target() == Routes::kHEALTH) {
+    return handle_health(req);
+  }
+
+  if (!is_authorized(req)) {
+    return error_response("Unauthorized", http::status::unauthorized,
+                          req.version());
+  }
+
   if (req.method() == http::verb::post && req.target() == Routes::kSTOP) {
     return handle_stop(req);
   }
 
   if (req.method() == http::verb::get && req.target() == Routes::kSTATUS) {
     return handle_status(req);
-  }
-
-  if (req.method() == http::verb::get && req.target() == Routes::kHEALTH) {
-    return handle_health(req);
   }
 
   if (req.method() == http::verb::post && req.target() == Routes::kSHUTDOWN) {

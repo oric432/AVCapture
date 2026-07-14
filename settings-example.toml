@@ -1,6 +1,9 @@
 [api]
 address = "127.0.0.1"
 port = 8084
+# If set, clients must send this value in the X-API-Key header on every
+# request except /health. Required if address is not loopback.
+api_key = ""
 
 [recording]
 fps = 30

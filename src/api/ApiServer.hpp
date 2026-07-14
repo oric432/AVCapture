@@ -15,10 +15,12 @@ public:
                                          const std::string &address,
                                          unsigned short port,
                                          Core::MediaRecorder *recorder,
-                                         std::function<void()> on_shutdown = {});
+                                         std::function<void()> on_shutdown = {},
+                                         std::string api_key = {});
 
   ApiServer(asio::io_context &ioc, Core::MediaRecorder *recorder,
-            std::function<void()> on_shutdown = {});
+            std::function<void()> on_shutdown = {},
+            std::string api_key = {});
   ApiServer(ApiServer &&) noexcept = default;
   ApiServer &operator=(ApiServer &&) noexcept = default;
 
@@ -33,5 +35,6 @@ private:
   tcp::acceptor acceptor_;
   Core::MediaRecorder *recorder_;
   std::function<void()> on_shutdown_;
+  std::string api_key_;
 };
 } // namespace AVCapture::Api

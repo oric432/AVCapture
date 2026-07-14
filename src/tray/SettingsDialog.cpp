@@ -35,6 +35,11 @@ SettingsDialog::SettingsDialog(QString settings_path, QWidget *parent)
   api_port_->setRange(1, 65535);
   form->addRow("API port", api_port_);
 
+  api_key_ = new QLineEdit(this);
+  api_key_->setEchoMode(QLineEdit::Password);
+  api_key_->setPlaceholderText("empty = no authentication required");
+  form->addRow("API key", api_key_);
+
   fps_ = new QSpinBox(this);
   fps_->setRange(1, 240);
   form->addRow("FPS", fps_);
@@ -105,6 +110,8 @@ void SettingsDialog::load() {
   api_address_->setText(QString::fromStdString(
       t.at_path("api.address").value_or(std::string{"127.0.0.1"})));
   api_port_->setValue(t.at_path("api.port").value_or(8084));
+  api_key_->setText(QString::fromStdString(
+      t.at_path("api.api_key").value_or(std::string{})));
   fps_->setValue(t.at_path("recording.fps").value_or(30));
   bitrate_->setValue(t.at_path("recording.bitrate").value_or(4000000));
   recording_length_seconds_->setValue(
@@ -133,6 +140,7 @@ void SettingsDialog::on_save_clicked() {
   toml::table api_tbl;
   api_tbl.insert("address", api_address_->text().toStdString());
   api_tbl.insert("port", api_port_->value());
+  api_tbl.insert("api_key", api_key_->text().toStdString());
 
   toml::table recording_tbl;
   recording_tbl.insert("fps", fps_->value());

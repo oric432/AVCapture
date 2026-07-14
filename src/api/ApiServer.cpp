@@ -5,17 +5,18 @@ using namespace AVCapture::Api;
 using namespace AVCapture::Error;
 
 ApiServer::ApiServer(asio::io_context &ioc, Core::MediaRecorder *recorder,
-                     std::function<void()> on_shutdown)
+                     std::function<void()> on_shutdown, std::string api_key)
     : acceptor_(ioc), recorder_(recorder),
-      on_shutdown_(std::move(on_shutdown)) {}
+      on_shutdown_(std::move(on_shutdown)), api_key_(std::move(api_key)) {}
 
 Result<ApiServer> ApiServer::create(asio::io_context &ioc,
                                     const std::string &address,
                                     unsigned short port,
                                     Core::MediaRecorder *recorder,
-                                    std::function<void()> on_shutdown) {
+                                    std::function<void()> on_shutdown,
+                                    std::string api_key) {
   Result<ApiServer> server{std::in_place, ioc, recorder,
-                           std::move(on_shutdown)};
+                           std::move(on_shutdown), std::move(api_key)};
 
   beast::error_code err;
   auto boost_addr = boost::asio::ip::make_address(address, err);
@@ -66,7 +67,7 @@ void ApiServer::do_accept() {
   acceptor_.async_accept([this](beast::error_code errc, tcp::socket socket) {
     if (!errc) {
       std::make_shared<HttpSession>(std::move(socket), recorder_,
-                                    on_shutdown_)
+                                    on_shutdown_, api_key_)
           ->run();
     }
     do_accept();
