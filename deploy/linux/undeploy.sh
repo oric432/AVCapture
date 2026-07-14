@@ -44,4 +44,9 @@ pkill -TERM -x "${APP_NAME}" >/dev/null 2>&1 || true
 rm -f "${SERVICE_FILE}"
 systemctl --user daemon-reload
 
+# --------------- Tray app ----------------
+AUTOSTART_FILE="${HOME}/.config/autostart/${APP_NAME}Tray.desktop"
+pkill -TERM -x "${APP_NAME}Tray" >/dev/null 2>&1 || true
+rm -f "${AUTOSTART_FILE}"
+
 echo "Removed \"${APP_NAME}\"."
